@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { verifySessionApi } from "@/lib/dal";
 import { readFile } from "fs/promises";
 import { join } from "path";
 import { runCli, runCliJson, runCliCaptureBoth, gatewayCall } from "@/lib/openclaw-cli";
@@ -135,6 +136,11 @@ function detectChannel(to: string): string {
 }
 
 export async function GET(request: NextRequest) {
+  const session = await verifySessionApi();
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const { searchParams } = new URL(request.url);
   const action = searchParams.get("action");
   const jobId = searchParams.get("id");
@@ -205,6 +211,11 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const session = await verifySessionApi();
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     const body = await request.json();
     const { action, id, ...params } = body as {

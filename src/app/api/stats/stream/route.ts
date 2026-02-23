@@ -1,3 +1,4 @@
+import { verifySessionApi } from "@/lib/dal";
 import { getOpenClawHome, getDefaultWorkspaceSync } from "@/lib/paths";
 import { cpus, totalmem, freemem, loadavg, uptime, hostname, platform, arch } from "os";
 import { statfs, readdir, stat, readFile } from "fs/promises";
@@ -485,6 +486,14 @@ async function buildSnapshot(home: string) {
 /* ── SSE endpoint ─────────────────────────────────── */
 
 export async function GET() {
+  const session = await verifySessionApi();
+  if (!session) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      status: 401,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
   const home = getOpenClawHome();
 
   const encoder = new TextEncoder();

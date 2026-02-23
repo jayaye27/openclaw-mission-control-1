@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { verifySessionApi } from "@/lib/dal";
 import { runCli } from "@/lib/openclaw-cli";
 
 const GITHUB_RELEASES_URL =
@@ -33,6 +34,11 @@ export const dynamic = "force-dynamic";
  * Optionally includes changelog (release body) for the latest release.
  */
 export async function GET() {
+  const session = await verifySessionApi();
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     let currentVersion = "";
     try {

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { verifySessionApi } from "@/lib/dal";
 import { execFile } from "child_process";
 import { promisify } from "util";
 import { getOpenClawBin } from "@/lib/paths";
@@ -17,6 +18,11 @@ type SearchResult = {
 };
 
 export async function GET(request: NextRequest) {
+  const session = await verifySessionApi();
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const { searchParams } = new URL(request.url);
   const query = searchParams.get("q");
 

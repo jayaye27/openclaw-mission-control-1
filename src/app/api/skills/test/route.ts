@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { verifySessionApi } from "@/lib/dal";
 import { runCli } from "@/lib/openclaw-cli";
 
 export const dynamic = "force-dynamic";
@@ -19,6 +20,11 @@ function safeToken(raw: string, fallback = ""): string {
 }
 
 export async function POST(request: NextRequest) {
+  const session = await verifySessionApi();
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     const body = (await request.json()) as SkillTestRequest;
 

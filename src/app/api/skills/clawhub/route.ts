@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { verifySessionApi } from "@/lib/dal";
 import { execFile } from "child_process";
 import { promisify } from "util";
 import { constants as fsConstants } from "fs";
@@ -190,6 +191,11 @@ async function runClawHub(args: string[], timeout = 30000): Promise<{ stdout: st
 }
 
 export async function GET(request: NextRequest) {
+  const session = await verifySessionApi();
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const { searchParams } = new URL(request.url);
   const action = searchParams.get("action") || "explore";
 
@@ -232,6 +238,11 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const session = await verifySessionApi();
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     const body = await request.json();
     const action = body.action as string;

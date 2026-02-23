@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { verifySessionApi } from "@/lib/dal";
 import { readFile, readdir } from "fs/promises";
 import { join } from "path";
 import { getOpenClawHome, getGatewayUrl, getGatewayPort } from "@/lib/paths";
@@ -68,6 +69,11 @@ type CronRunEntry = {
 export const dynamic = "force-dynamic";
 
 export async function GET() {
+  const session = await verifySessionApi();
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     const [gateway, cronData, logs, cronRuns, agents] = await Promise.all([
       checkGatewayHealth(),

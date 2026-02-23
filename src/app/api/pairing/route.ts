@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { verifySessionApi } from "@/lib/dal";
 import { runCliJson, runCli } from "@/lib/openclaw-cli";
 import { getOpenClawHome } from "@/lib/paths";
 import { readdir, readFile } from "fs/promises";
@@ -35,6 +36,11 @@ type DeviceRequest = {
 /* ── GET: list all pending requests ──────────────── */
 
 export async function GET() {
+  const session = await verifySessionApi();
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const home = getOpenClawHome();
   const dmRequests: DmRequest[] = [];
   const deviceRequests: DeviceRequest[] = [];
@@ -113,6 +119,11 @@ export async function GET() {
 /* ── POST: approve / reject ──────────────────────── */
 
 export async function POST(request: NextRequest) {
+  const session = await verifySessionApi();
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     const body = await request.json();
     const action = body.action as string;

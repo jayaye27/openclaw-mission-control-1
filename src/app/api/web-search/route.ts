@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { verifySessionApi } from "@/lib/dal";
 import { readFile } from "fs/promises";
 import { join } from "path";
 import { homedir } from "os";
@@ -108,6 +109,11 @@ function resolveKey(
  *   5. process.env  (inherited from shell / launchd / systemd)
  */
 export async function GET() {
+  const session = await verifySessionApi();
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     // ── Read all sources in parallel ──
     const [mainConfig, authProfiles, authJson, dotEnvRaw] = await Promise.all([
@@ -241,6 +247,11 @@ const VALID_MODELS = new Set([
  * so we never clobber sibling keys like apiKey.
  */
 export async function PATCH(request: NextRequest) {
+  const session = await verifySessionApi();
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     const body = (await request.json()) as { model?: string };
     const model = String(body.model || "").trim();
@@ -286,6 +297,11 @@ export async function PATCH(request: NextRequest) {
 
 /** POST: run a web search via the agent */
 export async function POST(request: NextRequest) {
+  const session = await verifySessionApi();
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     const body = (await request.json()) as WebSearchRequest;
     const query = String(body.query || "").trim();
