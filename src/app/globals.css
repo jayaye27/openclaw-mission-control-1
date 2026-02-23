@@ -2,8 +2,6 @@
 @import "tw-animate-css";
 @import "@xterm/xterm/css/xterm.css";
 
-@custom-variant dark (&:is(.dark *));
-
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -26,6 +24,7 @@
   --color-input: var(--input);
   --color-border: var(--border);
   --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
   --color-muted-foreground: var(--muted-foreground);
@@ -47,125 +46,88 @@
   --radius-4xl: calc(var(--radius) + 16px);
 }
 
-/* ── Light mode (default) ───────────────────────── */
+/* ══════════════════════════════════════════════════════════════════════
+   ALFO CLAW COMMAND CENTER — DARK RED THEME (DARK MODE ONLY)
+   ══════════════════════════════════════════════════════════════════════ */
+
 :root {
-  --radius: 0.625rem;
+  --radius: 0.5rem;
 
-  /* Core backgrounds */
-  --background: #f8f8fa;
-  --foreground: #18181b;
-  --card: #ffffff;
-  --card-foreground: #18181b;
-  --popover: #ffffff;
-  --popover-foreground: #18181b;
-  --primary: #18181b;
-  --primary-foreground: #fafafa;
-  --secondary: #f0f0f3;
-  --secondary-foreground: #18181b;
-  --muted: #f0f0f3;
-  --muted-foreground: #71717a;
-  --accent: #f0f0f3;
-  --accent-foreground: #18181b;
-  --destructive: #dc2626;
+  /* Background layers - near black with subtle red undertone */
+  --background: oklch(0.13 0.02 20);
+  --foreground: oklch(0.93 0.01 20);
 
-  /* Borders & inputs */
-  --border: rgba(0, 0, 0, 0.08);
-  --input: rgba(0, 0, 0, 0.10);
-  --ring: rgba(0, 0, 0, 0.15);
+  /* Card/surface - slightly lighter than background */
+  --card: oklch(0.17 0.02 20);
+  --card-foreground: oklch(0.93 0.01 20);
 
-  /* Charts */
-  --chart-1: #6366f1;
-  --chart-2: #0891b2;
-  --chart-3: #d97706;
-  --chart-4: #9333ea;
-  --chart-5: #dc2626;
+  /* Popover - same as card */
+  --popover: oklch(0.17 0.02 20);
+  --popover-foreground: oklch(0.93 0.01 20);
 
-  /* Sidebar */
-  --sidebar: #f0f0f5;
-  --sidebar-foreground: #18181b;
-  --sidebar-primary: #7c3aed;
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #e8e8f0;
-  --sidebar-accent-foreground: #18181b;
-  --sidebar-border: rgba(0, 0, 0, 0.08);
-  --sidebar-ring: rgba(0, 0, 0, 0.15);
+  /* Primary - Dark red (the signature color) */
+  --primary: oklch(0.40 0.16 25);
+  --primary-foreground: oklch(0.98 0.005 20);
 
-  /* ── Semantic surface tokens ── */
-  --surface-0: #ffffff;                   /* Flat card / panel */
-  --surface-1: rgba(0, 0, 0, 0.02);      /* Subtle raised */
-  --surface-2: rgba(0, 0, 0, 0.04);      /* Elevated card */
-  --surface-3: rgba(0, 0, 0, 0.06);      /* Input / pill / tag */
-  --surface-inset: rgba(0, 0, 0, 0.03);  /* Recessed area inside a card */
-  --surface-overlay: rgba(255, 255, 255, 0.95); /* Dropdown, popover */
-  --surface-header: rgba(255, 255, 255, 0.8);   /* Header / toolbar */
+  /* Secondary - Muted dark gray */
+  --secondary: oklch(0.22 0.01 20);
+  --secondary-foreground: oklch(0.88 0.01 20);
 
-  /* ── Semantic border tokens ── */
-  --border-subtle: rgba(0, 0, 0, 0.04);
-  --border-default: rgba(0, 0, 0, 0.08);
-  --border-strong: rgba(0, 0, 0, 0.12);
-  --border-accent: rgba(0, 0, 0, 0.16);
+  /* Accent - Subtle dark red for hover states */
+  --accent: oklch(0.28 0.08 25);
+  --accent-foreground: oklch(0.95 0.01 20);
 
-  /* ── Semantic text tokens ── */
-  --text-primary: #18181b;
-  --text-secondary: #3f3f46;
-  --text-tertiary: #71717a;
-  --text-quaternary: #a1a1aa;
-  --text-placeholder: #a1a1aa;
+  /* Muted elements */
+  --muted: oklch(0.20 0.01 20);
+  --muted-foreground: oklch(0.65 0.01 20);
 
-}
+  /* Destructive - Brighter red for errors/danger */
+  --destructive: oklch(0.50 0.20 25);
+  --destructive-foreground: oklch(0.98 0.005 20);
 
-/* ── Dark mode ──────────────────────────────────── */
-.dark {
-  --background: #050508;
-  --foreground: #f4f4f5;
-  --card: #111114;
-  --card-foreground: #f4f4f5;
-  --popover: #111114;
-  --popover-foreground: #f4f4f5;
-  --primary: #e4e4e7;
-  --primary-foreground: #18181b;
-  --secondary: #1e1e22;
-  --secondary-foreground: #f4f4f5;
-  --muted: #1e1e22;
-  --muted-foreground: #71717a;
-  --accent: #1e1e22;
-  --accent-foreground: #f4f4f5;
-  --destructive: #dc2626;
-  --border: rgba(255, 255, 255, 0.08);
-  --input: rgba(255, 255, 255, 0.12);
-  --ring: rgba(255, 255, 255, 0.2);
-  --chart-1: #6366f1;
-  --chart-2: #22d3ee;
-  --chart-3: #f59e0b;
-  --chart-4: #a855f7;
-  --chart-5: #ef4444;
-  --sidebar: #0a0a0e;
-  --sidebar-foreground: #f4f4f5;
-  --sidebar-primary: #7c3aed;
-  --sidebar-primary-foreground: #f4f4f5;
-  --sidebar-accent: #1e1e22;
-  --sidebar-accent-foreground: #f4f4f5;
-  --sidebar-border: rgba(255, 255, 255, 0.08);
-  --sidebar-ring: rgba(255, 255, 255, 0.2);
+  /* Borders and inputs */
+  --border: oklch(0.28 0.02 20);
+  --input: oklch(0.22 0.02 20);
+  --ring: oklch(0.45 0.14 25);
 
-  --surface-0: #111114;
-  --surface-1: rgba(255, 255, 255, 0.02);
-  --surface-2: rgba(255, 255, 255, 0.04);
-  --surface-3: rgba(255, 255, 255, 0.06);
-  --surface-inset: rgba(255, 255, 255, 0.02);
-  --surface-overlay: rgba(17, 17, 20, 0.97);
-  --surface-header: rgba(12, 12, 16, 0.6);
+  /* Chart colors - use red spectrum */
+  --chart-1: oklch(0.45 0.16 25);
+  --chart-2: oklch(0.40 0.12 30);
+  --chart-3: oklch(0.35 0.08 35);
+  --chart-4: oklch(0.30 0.05 20);
+  --chart-5: oklch(0.25 0.03 15);
 
-  --border-subtle: rgba(255, 255, 255, 0.04);
-  --border-default: rgba(255, 255, 255, 0.08);
-  --border-strong: rgba(255, 255, 255, 0.12);
-  --border-accent: rgba(255, 255, 255, 0.16);
+  /* Sidebar - darker than main */
+  --sidebar: oklch(0.11 0.02 20);
+  --sidebar-foreground: oklch(0.90 0.01 20);
+  --sidebar-primary: oklch(0.40 0.16 25);
+  --sidebar-primary-foreground: oklch(0.98 0.005 20);
+  --sidebar-accent: oklch(0.25 0.06 25);
+  --sidebar-accent-foreground: oklch(0.93 0.01 20);
+  --sidebar-border: oklch(0.22 0.02 20);
+  --sidebar-ring: oklch(0.45 0.14 25);
 
-  --text-primary: #f4f4f5;
-  --text-secondary: #a1a1aa;
-  --text-tertiary: #71717a;
-  --text-quaternary: #52525b;
-  --text-placeholder: #52525b;
+  /* Semantic surface tokens */
+  --surface-0: oklch(0.17 0.02 20);
+  --surface-1: oklch(0.19 0.02 20);
+  --surface-2: oklch(0.21 0.02 20);
+  --surface-3: oklch(0.23 0.02 20);
+  --surface-inset: oklch(0.14 0.02 20);
+  --surface-overlay: oklch(0.17 0.02 20 / 0.97);
+  --surface-header: oklch(0.12 0.02 20 / 0.6);
+
+  /* Semantic border tokens */
+  --border-subtle: oklch(0.24 0.02 20);
+  --border-default: oklch(0.28 0.02 20);
+  --border-strong: oklch(0.32 0.02 20);
+  --border-accent: oklch(0.36 0.04 25);
+
+  /* Semantic text tokens */
+  --text-primary: oklch(0.93 0.01 20);
+  --text-secondary: oklch(0.78 0.01 20);
+  --text-tertiary: oklch(0.65 0.01 20);
+  --text-quaternary: oklch(0.52 0.01 20);
+  --text-placeholder: oklch(0.52 0.01 20);
 }
 
 @layer base {
@@ -178,92 +140,48 @@
   }
 }
 
-/* Apple-style liquid glass background */
+/* Dark mode body background with subtle dark red ambient glow */
 body {
   position: relative;
   min-height: 100vh;
-  background-color: var(--background);
-  transition: background-color 0.4s ease, background-image 0.4s ease;
-}
-
-/* Light: liquid glass — frosted orbs (lavender, blue, cool gray) */
-html:not(.dark) body {
-  background-color: #eef0f5;
+  background-color: oklch(0.13 0.02 20);
   background-image:
-    radial-gradient(ellipse 110% 90% at 15% 15%, rgba(255, 255, 255, 0.92) 0%, transparent 48%),
-    radial-gradient(ellipse 95% 85% at 88% 85%, rgba(238, 242, 255, 0.9) 0%, transparent 45%),
-    radial-gradient(ellipse 85% 75% at 50% 45%, rgba(248, 247, 255, 0.85) 0%, transparent 50%),
-    radial-gradient(ellipse 75% 90% at 72% 18%, rgba(245, 243, 255, 0.75) 0%, transparent 42%),
-    radial-gradient(ellipse 80% 70% at 22% 78%, rgba(235, 245, 255, 0.7) 0%, transparent 45%),
-    radial-gradient(ellipse 60% 80% at 55% 55%, rgba(250, 250, 253, 0.6) 0%, transparent 50%);
+    radial-gradient(ellipse 100% 80% at 15% 20%, oklch(0.20 0.08 25 / 0.18) 0%, transparent 50%),
+    radial-gradient(ellipse 90% 70% at 88% 75%, oklch(0.15 0.04 20 / 0.12) 0%, transparent 45%),
+    radial-gradient(ellipse 80% 100% at 50% 50%, oklch(0.16 0.03 22 / 0.4) 0%, transparent 55%),
+    radial-gradient(ellipse 70% 80% at 70% 25%, oklch(0.18 0.06 25 / 0.08) 0%, transparent 40%),
+    radial-gradient(ellipse 85% 60% at 25% 85%, oklch(0.14 0.03 20 / 0.1) 0%, transparent 45%);
   background-attachment: fixed;
 }
 
-/* Dark: liquid glass — deep glass orbs */
-.dark body {
-  background-color: #050508;
-  background-image:
-    radial-gradient(ellipse 100% 80% at 15% 20%, rgba(88, 80, 236, 0.18) 0%, transparent 50%),
-    radial-gradient(ellipse 90% 70% at 88% 75%, rgba(6, 95, 70, 0.12) 0%, transparent 45%),
-    radial-gradient(ellipse 80% 100% at 50% 50%, rgba(30, 41, 59, 0.4) 0%, transparent 55%),
-    radial-gradient(ellipse 70% 80% at 70% 25%, rgba(59, 130, 246, 0.08) 0%, transparent 40%),
-    radial-gradient(ellipse 85% 60% at 25% 85%, rgba(15, 50, 40, 0.1) 0%, transparent 45%);
-  background-attachment: fixed;
-}
-
-/* Frosted glass overlay (liquid glass sheen) */
+/* Subtle star/dust overlay for depth */
 body::before {
   content: '';
   position: fixed;
   inset: 0;
   pointer-events: none;
   z-index: 0;
-  opacity: 0;
-  transition: opacity 0.4s ease;
+  opacity: 0.6;
   background-image:
-    radial-gradient(1.2px 1.2px at 10% 15%, rgba(255,255,255,0.45), transparent),
-    radial-gradient(0.8px 0.8px at 20% 40%, rgba(255,255,255,0.25), transparent),
-    radial-gradient(1.5px 1.5px at 35% 8%, rgba(255,255,255,0.55), transparent),
-    radial-gradient(1px 1px at 48% 62%, rgba(255,255,255,0.35), transparent),
-    radial-gradient(0.8px 0.8px at 55% 28%, rgba(255,255,255,0.20), transparent),
-    radial-gradient(1.5px 1.5px at 65% 78%, rgba(255,255,255,0.50), transparent),
-    radial-gradient(1px 1px at 72% 42%, rgba(255,255,255,0.30), transparent),
-    radial-gradient(0.8px 0.8px at 82% 58%, rgba(255,255,255,0.20), transparent),
-    radial-gradient(1.5px 1.5px at 92% 22%, rgba(255,255,255,0.55), transparent),
-    radial-gradient(1px 1px at 15% 75%, rgba(255,255,255,0.35), transparent),
-    radial-gradient(0.8px 0.8px at 38% 88%, rgba(255,255,255,0.20), transparent),
-    radial-gradient(1.5px 1.5px at 58% 5%, rgba(255,255,255,0.50), transparent),
-    radial-gradient(1px 1px at 78% 92%, rgba(255,255,255,0.30), transparent),
-    radial-gradient(0.8px 0.8px at 5% 48%, rgba(255,255,255,0.20), transparent),
-    radial-gradient(1.5px 1.5px at 88% 72%, rgba(255,255,255,0.50), transparent),
-    radial-gradient(0.6px 0.6px at 25% 55%, rgba(255,255,255,0.15), transparent),
-    radial-gradient(1px 1px at 45% 35%, rgba(255,255,255,0.30), transparent),
-    radial-gradient(0.6px 0.6px at 62% 12%, rgba(255,255,255,0.15), transparent),
-    radial-gradient(1.2px 1.2px at 85% 45%, rgba(255,255,255,0.40), transparent),
-    radial-gradient(0.6px 0.6px at 95% 85%, rgba(255,255,255,0.15), transparent);
+    radial-gradient(1.2px 1.2px at 10% 15%, oklch(0.50 0.06 25 / 0.45), transparent),
+    radial-gradient(0.8px 0.8px at 20% 40%, oklch(0.45 0.04 20 / 0.25), transparent),
+    radial-gradient(1.5px 1.5px at 35% 8%, oklch(0.55 0.08 25 / 0.55), transparent),
+    radial-gradient(1px 1px at 48% 62%, oklch(0.50 0.05 22 / 0.35), transparent),
+    radial-gradient(0.8px 0.8px at 55% 28%, oklch(0.45 0.04 20 / 0.20), transparent),
+    radial-gradient(1.5px 1.5px at 65% 78%, oklch(0.55 0.07 25 / 0.50), transparent),
+    radial-gradient(1px 1px at 72% 42%, oklch(0.50 0.05 22 / 0.30), transparent),
+    radial-gradient(0.8px 0.8px at 82% 58%, oklch(0.45 0.04 20 / 0.20), transparent),
+    radial-gradient(1.5px 1.5px at 92% 22%, oklch(0.55 0.08 25 / 0.55), transparent),
+    radial-gradient(1px 1px at 15% 75%, oklch(0.50 0.05 22 / 0.35), transparent),
+    radial-gradient(0.8px 0.8px at 38% 88%, oklch(0.45 0.04 20 / 0.20), transparent),
+    radial-gradient(1.5px 1.5px at 58% 5%, oklch(0.55 0.07 25 / 0.50), transparent),
+    radial-gradient(1px 1px at 78% 92%, oklch(0.50 0.05 22 / 0.30), transparent),
+    radial-gradient(0.8px 0.8px at 5% 48%, oklch(0.45 0.04 20 / 0.20), transparent),
+    radial-gradient(1.5px 1.5px at 88% 72%, oklch(0.55 0.07 25 / 0.50), transparent);
   background-size: 220px 220px;
 }
 
-/* Light mode: very subtle glass sheen */
-html:not(.dark) body::before {
-  opacity: 0.35;
-  background-image:
-    radial-gradient(1px 1px at 12% 18%, rgba(255,255,255,0.9), transparent),
-    radial-gradient(0.8px 0.8px at 25% 42%, rgba(255,255,255,0.6), transparent),
-    radial-gradient(1.2px 1.2px at 38% 10%, rgba(255,255,255,0.8), transparent),
-    radial-gradient(1px 1px at 52% 65%, rgba(255,255,255,0.5), transparent),
-    radial-gradient(0.8px 0.8px at 68% 30%, rgba(255,255,255,0.4), transparent),
-    radial-gradient(1.2px 1.2px at 78% 82%, rgba(255,255,255,0.7), transparent),
-    radial-gradient(1px 1px at 18% 72%, rgba(255,255,255,0.5), transparent),
-    radial-gradient(0.8px 0.8px at 92% 15%, rgba(255,255,255,0.6), transparent),
-    radial-gradient(1px 1px at 42% 38%, rgba(255,255,255,0.45), transparent);
-}
-
-.dark body::before {
-  opacity: 1;
-}
-
-/* Custom scrollbar — adapts to theme */
+/* Custom scrollbar — dark red theme */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -274,131 +192,75 @@ html:not(.dark) body::before {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.12);
+  background: oklch(0.30 0.04 25 / 0.4);
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 0, 0, 0.22);
+  background: oklch(0.35 0.06 25 / 0.6);
 }
 
-.dark ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.08);
-}
-
-.dark ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.15);
-}
-
-/* Ensure content sits above the star layer */
+/* Ensure content sits above the background layer */
 body > * {
   position: relative;
   z-index: 1;
 }
 
+/* ══════════════════════════════════════════════════════════════════════
+   ACCENT COLOR OVERRIDES — DARK RED PRIMARY
+   Replace violet accents with dark red throughout
+   ══════════════════════════════════════════════════════════════════════ */
 
-/* ═══════════════════════════════════════════════════════════════════
-   LIGHT MODE — ACCENT COLOR ADJUSTMENTS
-   ─────────────────────────────────────────────────────────────────
-   All base theming (bg, text, border, hover) is now handled via
-   semantic Tailwind tokens in the components themselves:
-   
-     bg-card           → white in light, dark in dark
-     bg-muted          → light gray in light, dark gray in dark
-     text-foreground    → near-black in light, near-white in dark
-     text-muted-foreground → mid gray, adapts automatically
-     border-foreground/[0.06] → dark tint in light, light tint in dark
-     bg-foreground/[0.04] → subtle tint that adapts to theme
-   
-   The ONLY overrides needed here are for accent colors (violet, 
-   emerald, etc.) that need contrast tuning for light backgrounds,
-   and third-party component styles (React Flow).
-   ═══════════════════════════════════════════════════════════════════ */
+/* Override violet text colors to dark red */
+.text-violet-100,
+.text-violet-200,
+.text-violet-300,
+.text-violet-400,
+.text-violet-500 {
+  color: oklch(0.55 0.14 25) !important;
+}
 
-/* ── Accent text colors — boost contrast on white backgrounds ── */
-:root:not(.dark) .text-violet-100 { color: #6d28d9 !important; }
-:root:not(.dark) .text-violet-200 { color: #6d28d9 !important; }
-:root:not(.dark) .text-violet-300 { color: #7c3aed !important; }
-:root:not(.dark) .text-violet-400 { color: #7c3aed !important; }
-:root:not(.dark) .text-violet-400\/40 { color: rgba(124, 58, 237, 0.5) !important; }
-:root:not(.dark) .text-emerald-100 { color: #047857 !important; }
-:root:not(.dark) .text-emerald-200 { color: #047857 !important; }
-:root:not(.dark) .text-emerald-300 { color: #059669 !important; }
-:root:not(.dark) .text-emerald-400 { color: #059669 !important; }
-:root:not(.dark) .text-amber-100 { color: #92400e !important; }
-:root:not(.dark) .text-amber-300 { color: #b45309 !important; }
-:root:not(.dark) .text-amber-400 { color: #b45309 !important; }
-:root:not(.dark) .text-red-100 { color: #b91c1c !important; }
-:root:not(.dark) .text-red-200 { color: #b91c1c !important; }
-:root:not(.dark) .text-red-300 { color: #dc2626 !important; }
-:root:not(.dark) .text-red-400 { color: #dc2626 !important; }
-:root:not(.dark) .text-blue-100 { color: #1d4ed8 !important; }
-:root:not(.dark) .text-blue-200 { color: #1d4ed8 !important; }
-:root:not(.dark) .text-blue-300 { color: #2563eb !important; }
-:root:not(.dark) .text-blue-400 { color: #2563eb !important; }
-:root:not(.dark) .text-cyan-100 { color: #0e7490 !important; }
-:root:not(.dark) .text-cyan-200 { color: #0e7490 !important; }
-:root:not(.dark) .text-cyan-300 { color: #0891b2 !important; }
-:root:not(.dark) .text-cyan-400 { color: #0891b2 !important; }
-:root:not(.dark) .text-sky-200 { color: #0284c7 !important; }
-:root:not(.dark) .text-sky-300 { color: #0284c7 !important; }
-:root:not(.dark) .text-sky-400 { color: #0284c7 !important; }
-:root:not(.dark) .text-sky-400\/60 { color: rgba(2, 132, 199, 0.7) !important; }
-:root:not(.dark) .text-amber-200 { color: #b45309 !important; }
-:root:not(.dark) .text-pink-400 { color: #db2777 !important; }
-:root:not(.dark) .text-rose-400\/60 { color: rgba(225, 29, 72, 0.7) !important; }
-:root:not(.dark) .text-zinc-100 { color: #3f3f46 !important; }
-:root:not(.dark) .text-zinc-200 { color: #3f3f46 !important; }
-:root:not(.dark) .text-zinc-300 { color: #52525b !important; }
+.text-violet-400\/40 {
+  color: oklch(0.50 0.12 25 / 0.5) !important;
+}
 
-/* ── Accent hover text ── */
-:root:not(.dark) .hover\:text-violet-300:hover { color: #6d28d9 !important; }
-:root:not(.dark) .hover\:text-violet-200:hover { color: #6d28d9 !important; }
+/* Override violet backgrounds to dark red */
+.bg-violet-500\/5 { background-color: oklch(0.40 0.16 25 / 0.05) !important; }
+.bg-violet-500\/10 { background-color: oklch(0.40 0.16 25 / 0.10) !important; }
+.bg-violet-500\/15 { background-color: oklch(0.40 0.16 25 / 0.15) !important; }
+.bg-violet-500\/20 { background-color: oklch(0.40 0.16 25 / 0.20) !important; }
+.bg-violet-600 { background-color: oklch(0.40 0.16 25) !important; }
+.bg-violet-600\/20 { background-color: oklch(0.40 0.16 25 / 0.20) !important; }
+.bg-violet-600\/90 { background-color: oklch(0.40 0.16 25 / 0.90) !important; }
+.bg-violet-950\/60 { background-color: oklch(0.20 0.08 25 / 0.60) !important; }
+.bg-violet-900\/80 { background-color: oklch(0.25 0.10 25 / 0.80) !important; }
 
-/* ── Accent backgrounds — slightly more opacity for visibility ── */
-:root:not(.dark) .bg-violet-500\/10 { background-color: rgba(139, 92, 246, 0.08) !important; }
-:root:not(.dark) .bg-violet-500\/15 { background-color: rgba(139, 92, 246, 0.10) !important; }
-:root:not(.dark) .bg-violet-500\/20 { background-color: rgba(139, 92, 246, 0.12) !important; }
-:root:not(.dark) .bg-violet-600\/20 { background-color: rgba(124, 58, 237, 0.10) !important; }
-:root:not(.dark) .bg-violet-950\/60 { background-color: rgba(124, 58, 237, 0.06) !important; }
-:root:not(.dark) .bg-emerald-500\/10 { background-color: rgba(16, 185, 129, 0.08) !important; }
-:root:not(.dark) .bg-red-500\/10 { background-color: rgba(239, 68, 68, 0.08) !important; }
-:root:not(.dark) .bg-amber-500\/10 { background-color: rgba(245, 158, 11, 0.08) !important; }
-:root:not(.dark) .bg-blue-500\/10 { background-color: rgba(59, 130, 246, 0.08) !important; }
-:root:not(.dark) .bg-cyan-500\/10 { background-color: rgba(6, 182, 212, 0.08) !important; }
-:root:not(.dark) .bg-sky-500\/10 { background-color: rgba(14, 165, 233, 0.08) !important; }
-:root:not(.dark) .bg-sky-500\/20 { background-color: rgba(14, 165, 233, 0.12) !important; }
-:root:not(.dark) .bg-sky-950\/50 { background-color: rgba(14, 165, 233, 0.06) !important; }
-:root:not(.dark) .bg-amber-950\/40 { background-color: rgba(245, 158, 11, 0.06) !important; }
-:root:not(.dark) .bg-violet-900\/80 { background-color: rgba(139, 92, 246, 0.10) !important; }
+/* Override violet borders to dark red */
+.border-violet-500\/20 { border-color: oklch(0.40 0.16 25 / 0.20) !important; }
+.border-violet-500\/30 { border-color: oklch(0.40 0.16 25 / 0.30) !important; }
+.border-violet-500\/40 { border-color: oklch(0.40 0.16 25 / 0.40) !important; }
+.border-violet-500\/50 { border-color: oklch(0.40 0.16 25 / 0.50) !important; }
 
-/* ── Accent hover backgrounds ── */
-:root:not(.dark) .hover\:bg-violet-500\/10:hover { background-color: rgba(124, 58, 237, 0.10) !important; }
-:root:not(.dark) .hover\:bg-violet-600\/30:hover { background-color: rgba(124, 58, 237, 0.15) !important; }
-:root:not(.dark) .hover\:bg-red-500\/10:hover { background-color: rgba(220, 38, 38, 0.08) !important; }
-:root:not(.dark) .hover\:bg-red-500\/20:hover { background-color: rgba(220, 38, 38, 0.10) !important; }
+/* Override violet focus/ring states */
+.focus\:border-violet-500\/30:focus { border-color: oklch(0.40 0.16 25 / 0.30) !important; }
+.focus\:border-violet-500\/40:focus { border-color: oklch(0.40 0.16 25 / 0.40) !important; }
 
-/* ── Accent border colors ── */
-:root:not(.dark) .border-violet-500\/20 { border-color: rgba(124, 58, 237, 0.15) !important; }
-:root:not(.dark) .border-violet-500\/30 { border-color: rgba(124, 58, 237, 0.20) !important; }
-:root:not(.dark) .border-violet-500\/40 { border-color: rgba(124, 58, 237, 0.25) !important; }
-:root:not(.dark) .border-violet-500\/50 { border-color: rgba(124, 58, 237, 0.30) !important; }
-:root:not(.dark) .border-emerald-500\/20 { border-color: rgba(5, 150, 105, 0.15) !important; }
-:root:not(.dark) .border-emerald-500\/30 { border-color: rgba(5, 150, 105, 0.20) !important; }
-:root:not(.dark) .border-amber-500\/20 { border-color: rgba(180, 83, 9, 0.15) !important; }
-:root:not(.dark) .border-red-500\/20 { border-color: rgba(220, 38, 38, 0.15) !important; }
-:root:not(.dark) .border-sky-500\/20 { border-color: rgba(14, 165, 233, 0.15) !important; }
+/* Override violet hover states */
+.hover\:text-violet-200:hover,
+.hover\:text-violet-300:hover {
+  color: oklch(0.60 0.14 25) !important;
+}
 
-/* ── Accent fill ── */
-:root:not(.dark) .fill-emerald-400 { fill: #059669 !important; }
+.hover\:bg-violet-500:hover { background-color: oklch(0.45 0.16 25) !important; }
+.hover\:bg-violet-500\/5:hover { background-color: oklch(0.40 0.16 25 / 0.05) !important; }
+.hover\:bg-violet-500\/10:hover { background-color: oklch(0.40 0.16 25 / 0.10) !important; }
+.hover\:bg-violet-600\/30:hover { background-color: oklch(0.40 0.16 25 / 0.30) !important; }
 
-/* ── React Flow internals (third-party, can't use Tailwind tokens) ── */
-:root:not(.dark) .react-flow__node { color: var(--foreground); }
-:root:not(.dark) .react-flow__edge-path { stroke: rgba(0, 0, 0, 0.2); }
-:root:not(.dark) .react-flow__edge.animated path { stroke: rgba(124, 58, 237, 0.4); }
+.hover\:border-violet-500\/20:hover { border-color: oklch(0.40 0.16 25 / 0.20) !important; }
+.hover\:border-violet-500\/30:hover { border-color: oklch(0.40 0.16 25 / 0.30) !important; }
 
-/* ── Gradient stops (legacy, rare) ── */
-:root:not(.dark) .from-zinc-500 { --tw-gradient-from: #a1a1aa !important; }
-:root:not(.dark) .to-zinc-600 { --tw-gradient-to: #a1a1aa !important; }
-
+/* React Flow internals */
+.react-flow__node { color: var(--foreground); }
+.react-flow__edge-path { stroke: oklch(0.35 0.04 25 / 0.4); }
+.react-flow__edge.animated path { stroke: oklch(0.40 0.12 25 / 0.6); }
 
