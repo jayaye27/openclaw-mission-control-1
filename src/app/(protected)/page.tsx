@@ -18,7 +18,6 @@ import { AudioView } from "@/components/audio-view";
 import { VectorView } from "@/components/vector-view";
 import { AgentsView } from "@/components/agents-view";
 import { UsageView } from "@/components/usage-view";
-import { TerminalView } from "@/components/terminal-view";
 import { PermissionsView } from "@/components/permissions-view";
 import { TailscaleView } from "@/components/tailscale-view";
 import { BrowserRelayView } from "@/components/browser-relay-view";
@@ -64,8 +63,6 @@ function SectionContent({ section }: { section: string }) {
       return <LogsView />;
     case "usage":
       return <UsageView />;
-    case "terminal":
-      return <TerminalView />;
     case "permissions":
       return <PermissionsView />;
     case "tailscale":

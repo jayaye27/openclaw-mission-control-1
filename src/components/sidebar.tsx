@@ -23,7 +23,6 @@ import {
   Wrench,
   MessageCircle,
   Terminal,
-  SquareTerminal,
   RefreshCw,
   Power,
   Cpu,
@@ -82,7 +81,6 @@ const navItems: {
   { section: "tailscale", label: "Tailscale", icon: Waypoints },
   { section: "permissions", label: "Permissions", icon: Shield, dividerAfter: true },
   { section: "usage", label: "Usage", icon: BarChart3 },
-  { section: "terminal", label: "Terminal", icon: SquareTerminal },
   { section: "logs", label: "Logs", icon: Terminal },
   { section: "config", label: "Config", icon: Settings },
 ];
