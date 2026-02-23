@@ -63,33 +63,13 @@ export function SetupWizard() {
     setGeneratedToken(null)
   }
 
-  // Handle step 3 confirmation: auto-login and redirect
-  const handleConfirm = async () => {
-    if (!generatedToken || !userInfo) return
-
-    setIsLoading(true)
-    setError(null)
-
-    try {
-      // Login with the generated token
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token: generatedToken }),
-      })
-
-      if (!response.ok) {
-        const data = await response.json()
-        throw new Error(data.error || 'Login failed')
-      }
-
-      // Refresh the page to re-run server components
-      // isFirstRun() will now return false, hiding the wizard
-      router.refresh()
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Login failed')
-      setIsLoading(false)
-    }
+  // Handle step 3 confirmation: redirect to dashboard
+  // Session is already created by the setup API
+  const handleConfirm = () => {
+    // Refresh the page to re-run server components
+    // isFirstRun() will now return false, hiding the wizard
+    // The session cookie is already set from the setup API call
+    router.refresh()
   }
 
   // Handle step 3 back: go back to token display

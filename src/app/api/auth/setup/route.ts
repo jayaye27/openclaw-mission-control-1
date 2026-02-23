@@ -5,6 +5,7 @@ import {
   saveAdminConfig,
   isFirstRun,
 } from '@/lib/auth/token'
+import { getSession } from '@/lib/auth/session'
 
 /**
  * POST /api/auth/setup
@@ -71,6 +72,17 @@ export async function POST(request: NextRequest) {
       email: email.trim(),
       sessionSecret,
     })
+
+    // Create session immediately (auto-login after setup)
+    // This works because we're in the same request context before the server restarts
+    const session = await getSession()
+    session.isAuthenticated = true
+    session.userId = 'admin'
+    session.firstName = firstName.trim()
+    session.lastName = lastName.trim()
+    session.email = email.trim()
+    session.loginAt = Date.now()
+    await session.save()
 
     // Return plaintext token (ONLY time it's ever returned)
     return NextResponse.json({
