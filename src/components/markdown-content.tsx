@@ -3,7 +3,33 @@
 import React from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import rehypeRaw from "rehype-raw";
+import rehypeSanitize, { defaultSchema } from "rehype-sanitize";
 import { cn } from "@/lib/utils";
+
+// Customize sanitization schema
+// Start with defaults, then customize as needed
+const sanitizeSchema = {
+  ...defaultSchema,
+  // Remove any script-related attributes
+  attributes: {
+    ...defaultSchema.attributes,
+    // Allow standard safe attributes only
+    "*": ["className", "id"],
+    a: ["href", "title", "target", "rel"],
+    img: ["src", "alt", "title", "width", "height"],
+    // Block all event handlers by not including them
+  },
+  // Block dangerous tags
+  tagNames: (defaultSchema.tagNames || []).filter(
+    (tag) => !["script", "style", "iframe", "object", "embed", "form", "input", "button"].includes(tag)
+  ),
+  // Strip dangerous protocols
+  protocols: {
+    href: ["http", "https", "mailto"],
+    src: ["http", "https"],
+  },
+};
 
 const baseComponents = {
   h1: ({ children, ...props }: React.ComponentPropsWithoutRef<"h1">) => (
@@ -169,6 +195,10 @@ export function MarkdownContent({
       <ReactMarkdown
         key={source.length}
         remarkPlugins={[remarkGfm]}
+        rehypePlugins={[
+          rehypeRaw,
+          [rehypeSanitize, sanitizeSchema],
+        ]}
         components={baseComponents}
       >
         {source}
