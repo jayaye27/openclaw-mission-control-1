@@ -3,8 +3,6 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { LayoutWrapper } from "@/components/layout-wrapper";
-import { SetupWizard } from "@/components/setup-wizard/setup-wizard";
-import { isFirstRun } from "@/lib/auth/token";
 
 // Force dynamic rendering to avoid useSearchParams issues during static generation
 export const dynamic = "force-dynamic";
@@ -58,14 +56,11 @@ export const viewport: Viewport = {
   userScalable: false,
 };
 
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  // Check if this is first run (no admin token configured)
-  const showSetup = await isFirstRun();
-
   return (
     <html lang="en" className="dark" suppressHydrationWarning>
       <head>
@@ -77,7 +72,6 @@ export default async function RootLayout({
       >
         <ThemeProvider>
           <LayoutWrapper>{children}</LayoutWrapper>
-          {showSetup && <SetupWizard />}
         </ThemeProvider>
       </body>
     </html>

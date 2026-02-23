@@ -1,0 +1,38 @@
+version: "3.8"
+
+services:
+  alfo-claw:
+    build: .
+    container_name: alfo-claw-command-center
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - SESSION_SECRET=${SESSION_SECRET}
+      - ADMIN_USERNAME=${ADMIN_USERNAME}
+      - ADMIN_PASSWORD_HASH=${ADMIN_PASSWORD_HASH}
+      - ADMIN_RECOVERY_TOKEN_HASH=${ADMIN_RECOVERY_TOKEN_HASH}
+      - ADMIN_FIRST_NAME=${ADMIN_FIRST_NAME}
+      - ADMIN_LAST_NAME=${ADMIN_LAST_NAME}
+      - ADMIN_EMAIL=${ADMIN_EMAIL}
+      - SETUP_COMPLETE=${SETUP_COMPLETE}
+    volumes:
+      - ./data:/app/data
+      - ./.env.local:/app/.env.local:ro
+    networks:
+      - traefik-public
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.alfo-claw.rule=Host(`cc.alfoai.com`)"
+      - "traefik.http.routers.alfo-claw.entrypoints=websecure"
+      - "traefik.http.routers.alfo-claw.tls=true"
+      - "traefik.http.routers.alfo-claw.tls.certresolver=letsencrypt"
+      - "traefik.http.services.alfo-claw.loadbalancer.server.port=3000"
+      # HTTP to HTTPS redirect
+      - "traefik.http.routers.alfo-claw-http.rule=Host(`cc.alfoai.com`)"
+      - "traefik.http.routers.alfo-claw-http.entrypoints=web"
+      - "traefik.http.routers.alfo-claw-http.middlewares=redirect-to-https"
+      - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
+
+networks:
+  traefik-public:
+    external: true

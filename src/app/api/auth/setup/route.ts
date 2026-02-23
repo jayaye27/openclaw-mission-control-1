@@ -5,7 +5,6 @@ import {
   saveAdminConfig,
   isFirstRun,
 } from '@/lib/auth/token'
-import { getSession } from '@/lib/auth/session'
 import { auditLog } from '@/lib/audit/logger'
 
 /**
@@ -19,8 +18,8 @@ function getClientIp(request: Request): string | null {
 
 /**
  * POST /api/auth/setup
- * Complete first-run setup: generate token, hash it, save config
- * Returns plaintext token ONCE for user to save
+ * Complete first-run setup: create admin with username/password
+ * Returns a recovery token for password reset
  */
 export async function POST(request: NextRequest) {
   try {
@@ -43,7 +42,7 @@ export async function POST(request: NextRequest) {
 
     // Parse request body
     const body = await request.json()
-    const { firstName, lastName, email } = body
+    const { firstName, lastName, email, username, password } = body
 
     // Validate inputs
     const errors: string[] = []
@@ -66,6 +65,22 @@ export async function POST(request: NextRequest) {
       errors.push('Invalid email format')
     }
 
+    if (!username || typeof username !== 'string' || username.trim() === '') {
+      errors.push('Username is required')
+    } else if (username.length < 3) {
+      errors.push('Username must be at least 3 characters')
+    } else if (username.length > 30) {
+      errors.push('Username must be 30 characters or less')
+    } else if (!/^[a-zA-Z0-9_-]+$/.test(username)) {
+      errors.push('Username can only contain letters, numbers, underscores, and hyphens')
+    }
+
+    if (!password || typeof password !== 'string') {
+      errors.push('Password is required')
+    } else if (password.length < 8) {
+      errors.push('Password must be at least 8 characters')
+    }
+
     if (errors.length > 0) {
       return NextResponse.json(
         { error: 'Validation failed', details: errors },
@@ -73,49 +88,41 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Generate secure token (32 bytes = 256 bits entropy)
-    const token = generateSecureToken(32)
+    // Hash the password using argon2id
+    const passwordHash = await hashToken(password)
 
-    // Hash the token using argon2id
-    const tokenHash = await hashToken(token)
+    // Generate recovery token (for password reset)
+    const recoveryToken = generateSecureToken(32)
+    const recoveryTokenHash = await hashToken(recoveryToken)
 
     // Generate session secret
     const sessionSecret = generateSecureToken(32)
 
     // Save config to .env.local
     await saveAdminConfig({
-      tokenHash,
+      username: username.trim().toLowerCase(),
+      passwordHash,
+      recoveryTokenHash,
       firstName: firstName.trim(),
       lastName: lastName.trim(),
       email: email.trim(),
       sessionSecret,
     })
 
-    // Create session immediately (auto-login after setup)
-    // This works because we're in the same request context before the server restarts
-    const session = await getSession()
-    session.isAuthenticated = true
-    session.userId = 'admin'
-    session.firstName = firstName.trim()
-    session.lastName = lastName.trim()
-    session.email = email.trim()
-    session.loginAt = Date.now()
-    await session.save()
-
-    // Log successful setup (DO NOT log token value)
+    // Log successful setup (DO NOT log password or token values)
     auditLog({
       category: 'auth',
       action: 'setup.complete',
-      actor: { userId: 'admin', email: email.trim() },
+      actor: { userId: username.trim().toLowerCase(), email: email.trim() },
       outcome: 'success',
       details: { adminName: `${firstName.trim()} ${lastName.trim()}` },
       ip: getClientIp(request),
     })
 
-    // Return plaintext token (ONLY time it's ever returned)
+    // Return recovery token (ONLY time it's ever returned)
     return NextResponse.json({
-      token,
-      message: 'Setup completed successfully. Save your token securely.',
+      recoveryToken,
+      message: 'Setup completed successfully. Save your recovery token securely.',
     })
   } catch (error) {
     console.error('Setup failed:', error)

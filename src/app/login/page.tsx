@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -9,16 +9,32 @@ import { Loader2, Eye, EyeOff, Lock } from 'lucide-react'
 
 /**
  * Login page for admin authentication
- * - Single token input field
+ * - Username and password fields
  * - Generic error messages only
  * - Lockout indication after 5 failed attempts
  */
 export default function LoginPage() {
   const router = useRouter()
-  const [token, setToken] = useState('')
-  const [showToken, setShowToken] = useState(false)
+  const [username, setUsername] = useState('')
+  const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [checkingSetup, setCheckingSetup] = useState(true)
+
+  // Check if setup is needed
+  useEffect(() => {
+    fetch('/api/auth/setup-status')
+      .then(res => res.json())
+      .then(data => {
+        if (!data.isConfigured) {
+          router.push('/setup')
+        } else {
+          setCheckingSetup(false)
+        }
+      })
+      .catch(() => setCheckingSetup(false))
+  }, [router])
 
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault()
@@ -29,7 +45,7 @@ export default function LoginPage() {
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token }),
+        body: JSON.stringify({ username, password }),
       })
 
       const data = await response.json()
@@ -47,7 +63,15 @@ export default function LoginPage() {
       setError('Unable to connect. Please try again.')
       setIsLoading(false)
     }
-  }, [token, router])
+  }, [username, password, router])
+
+  if (checkingSetup) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    )
+  }
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
@@ -57,7 +81,7 @@ export default function LoginPage() {
             <Lock className="h-7 w-7 text-primary" />
           </div>
           <CardTitle className="text-xl">Alfo Claw Command Center</CardTitle>
-          <CardDescription>Enter your admin token to continue</CardDescription>
+          <CardDescription>Sign in to your account</CardDescription>
         </CardHeader>
 
         <form onSubmit={handleSubmit}>
@@ -69,28 +93,43 @@ export default function LoginPage() {
             )}
 
             <div className="space-y-2">
-              <label htmlFor="token" className="text-sm font-medium text-foreground/80">
-                Admin Token
+              <label htmlFor="username" className="text-sm font-medium text-foreground/80">
+                Username
+              </label>
+              <Input
+                id="username"
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="Enter your username"
+                autoComplete="username"
+                autoFocus
+                disabled={isLoading}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label htmlFor="password" className="text-sm font-medium text-foreground/80">
+                Password
               </label>
               <div className="relative">
                 <Input
-                  id="token"
-                  type={showToken ? 'text' : 'password'}
-                  value={token}
-                  onChange={(e) => setToken(e.target.value)}
-                  placeholder="Enter your admin token"
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Enter your password"
                   autoComplete="current-password"
-                  autoFocus
                   disabled={isLoading}
                   className="pr-10"
                 />
                 <button
                   type="button"
-                  onClick={() => setShowToken(!showToken)}
+                  onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground/60 hover:text-foreground/80"
                   tabIndex={-1}
                 >
-                  {showToken ? (
+                  {showPassword ? (
                     <EyeOff className="h-4 w-4" />
                   ) : (
                     <Eye className="h-4 w-4" />
@@ -104,12 +143,12 @@ export default function LoginPage() {
             <Button
               type="submit"
               className="w-full"
-              disabled={!token.trim() || isLoading}
+              disabled={!username.trim() || !password.trim() || isLoading}
             >
               {isLoading ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  Authenticating...
+                  Signing in...
                 </>
               ) : (
                 'Sign In'

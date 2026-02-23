@@ -16,7 +16,7 @@ function getClientIp(request: Request): string | null {
 /**
  * POST /api/auth/login
  *
- * Authenticates user with admin token.
+ * Authenticates user with username and password.
  * - Uses generic error messages only ("Invalid credentials")
  * - 15-minute lockout after 5 failed attempts
  * - Creates 24-hour sliding window session on success
@@ -24,21 +24,20 @@ function getClientIp(request: Request): string | null {
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { token } = body as { token?: string }
+    const { username, password } = body as { username?: string; password?: string }
 
     // Validate input
-    if (!token || typeof token !== 'string') {
+    if (!username || typeof username !== 'string' || !password || typeof password !== 'string') {
       return NextResponse.json(
         { error: 'Invalid credentials' },
         { status: 401 }
       )
     }
 
-    // Use a consistent identifier for lockout tracking
-    // In single-admin setup, use 'admin' as the identifier
-    const lockoutId = 'admin'
+    const normalizedUsername = username.trim().toLowerCase()
 
     // Check lockout status
+    const lockoutId = normalizedUsername
     const lockoutStatus = checkLockout(lockoutId)
     if (lockoutStatus.locked) {
       auditLog({
@@ -46,7 +45,7 @@ export async function POST(request: Request) {
         action: 'login.lockout',
         actor: null,
         outcome: 'denied',
-        details: { reason: 'too_many_attempts' },
+        details: { reason: 'too_many_attempts', username: normalizedUsername },
         ip: getClientIp(request),
       })
       return NextResponse.json(
@@ -55,19 +54,37 @@ export async function POST(request: Request) {
       )
     }
 
-    // Get stored hash from environment
-    const storedHash = process.env.ADMIN_TOKEN_HASH
-    if (!storedHash) {
+    // Get stored credentials from environment
+    const storedUsername = process.env.ADMIN_USERNAME
+    const storedPasswordHash = process.env.ADMIN_PASSWORD_HASH
+
+    if (!storedUsername || !storedPasswordHash) {
       // No admin configured - should redirect to setup
-      // Return generic error to avoid information disclosure
       return NextResponse.json(
         { error: 'Invalid credentials' },
         { status: 401 }
       )
     }
 
-    // Verify token against stored hash (timing-safe via argon2)
-    const isValid = await verifyToken(token, storedHash)
+    // Check username first (case-insensitive)
+    if (normalizedUsername !== storedUsername.toLowerCase()) {
+      recordFailedAttempt(lockoutId)
+      auditLog({
+        category: 'auth',
+        action: 'login.failure',
+        actor: null,
+        outcome: 'failure',
+        details: { reason: 'invalid_credentials' },
+        ip: getClientIp(request),
+      })
+      return NextResponse.json(
+        { error: 'Invalid credentials' },
+        { status: 401 }
+      )
+    }
+
+    // Verify password against stored hash (timing-safe via argon2)
+    const isValid = await verifyToken(password, storedPasswordHash)
 
     if (!isValid) {
       // Record failed attempt
@@ -79,7 +96,7 @@ export async function POST(request: Request) {
           action: 'login.lockout',
           actor: null,
           outcome: 'denied',
-          details: { reason: 'too_many_attempts' },
+          details: { reason: 'too_many_attempts', username: normalizedUsername },
           ip: getClientIp(request),
         })
         return NextResponse.json(
@@ -108,7 +125,7 @@ export async function POST(request: Request) {
     // Create session
     const session = await getSession()
     session.isAuthenticated = true
-    session.userId = 'admin'
+    session.userId = storedUsername
     session.firstName = process.env.ADMIN_FIRST_NAME || 'Admin'
     session.lastName = process.env.ADMIN_LAST_NAME || ''
     session.email = process.env.ADMIN_EMAIL || 'admin@local'

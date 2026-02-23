@@ -34,15 +34,15 @@ export const verifySession = cache(async (): Promise<VerifiedSession> => {
     redirect('/login')
   }
 
-  // Refresh session (sliding window - extends cookie expiration)
-  await session.save()
+  // Note: Sliding window refresh happens in middleware, not here
+  // session.save() cannot be called in Server Components
 
   return {
     isAuth: true,
-    userId: session.userId,
-    firstName: session.firstName,
-    lastName: session.lastName,
-    email: session.email,
+    userId: session.userId!,
+    firstName: session.firstName!,
+    lastName: session.lastName!,
+    email: session.email!,
   }
 })
 
@@ -60,14 +60,14 @@ export const verifySessionApi = cache(async (): Promise<VerifiedSession | null> 
     return null
   }
 
-  // Refresh session (sliding window - extends cookie expiration)
-  await session.save()
+  // Note: Sliding window handled by cookie maxAge, not manual save
+  // API routes could call session.save() but it's not needed for verification
 
   return {
     isAuth: true,
-    userId: session.userId,
-    firstName: session.firstName,
-    lastName: session.lastName,
-    email: session.email,
+    userId: session.userId!,
+    firstName: session.firstName!,
+    lastName: session.lastName!,
+    email: session.email!,
   }
 })
