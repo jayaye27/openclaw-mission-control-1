@@ -29,7 +29,6 @@ import {
 import { cn } from "@/lib/utils";
 import { SearchModal } from "./search-modal";
 import { PairingNotifications } from "./pairing-notifications";
-import { ThemeToggle } from "./theme-toggle";
 import { chatStore, type ChatMessage } from "@/lib/chat-store";
 import {
   notifyGatewayRestarting as notifyGatewayRestartingStore,
@@ -719,14 +718,6 @@ export function Header() {
 
           {/* Pairing Notifications */}
           <PairingNotifications />
-
-          {/* ── divider ── */}
-          <div className="hidden h-5 w-px bg-foreground/10 sm:block" />
-
-          {/* ── Settings ── */}
-
-          {/* Theme Toggle */}
-          <ThemeToggle />
         </div>
       </header>
 
