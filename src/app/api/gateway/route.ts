@@ -1,11 +1,15 @@
 import { NextResponse } from "next/server";
 import { runCliJson } from "@/lib/openclaw-cli";
 import { getOpenClawBin } from "@/lib/paths";
+import { getGatewayHealth } from "@/lib/gateway-client";
 import { execFile } from "child_process";
 import { promisify } from "util";
 import { verifySessionApi } from "@/lib/dal";
 
 const exec = promisify(execFile);
+
+// Use direct WebSocket RPC instead of CLI for faster responses
+const USE_DIRECT_RPC = process.env.OPENCLAW_USE_DIRECT_RPC === "true";
 
 /**
  * Validate that a URL points to localhost only.
@@ -38,8 +42,8 @@ async function runGatewayServiceCommand(
 
 /**
  * GET /api/gateway - Returns comprehensive gateway health status.
- * Uses `openclaw health --json` for rich data including channel status,
- * agent info, sessions, and heartbeat configuration.
+ * Uses direct WebSocket RPC or `openclaw health --json` for rich data
+ * including channel status, agent info, sessions, and heartbeat configuration.
  */
 export async function GET() {
   // DAL-level auth check - CVE-2025-29927 mitigation
@@ -49,10 +53,19 @@ export async function GET() {
   }
 
   try {
-    const health = await runCliJson<Record<string, unknown>>(
-      ["health"],
-      12000
-    );
+    let health: Record<string, unknown>;
+
+    if (USE_DIRECT_RPC) {
+      // Use direct WebSocket RPC - much faster than CLI
+      health = await getGatewayHealth();
+    } else {
+      // Fallback to CLI
+      health = await runCliJson<Record<string, unknown>>(
+        ["health"],
+        20000
+      );
+    }
+
     return NextResponse.json({
       status: health.ok ? "online" : "degraded",
       health,

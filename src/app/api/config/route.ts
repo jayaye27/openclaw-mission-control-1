@@ -1,7 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
-import { gatewayCall } from "@/lib/openclaw-cli";
+import { gatewayCall as cliGatewayCall } from "@/lib/openclaw-cli";
+import { gatewayRpc } from "@/lib/gateway-client";
 import { verifySessionApi } from "@/lib/dal";
 import { auditLog } from "@/lib/audit/logger";
+
+// Use direct WebSocket RPC instead of CLI for faster responses
+const USE_DIRECT_RPC = process.env.OPENCLAW_USE_DIRECT_RPC === "true";
+
+// Wrapper that uses either direct RPC or CLI based on config
+async function gatewayCall<T>(
+  method: string,
+  params?: Record<string, unknown>,
+  timeout = 20000
+): Promise<T> {
+  if (USE_DIRECT_RPC) {
+    return gatewayRpc<T>(method, params, timeout);
+  }
+  return cliGatewayCall<T>(method, params, timeout);
+}
 
 /**
  * Extract client IP from request headers.
