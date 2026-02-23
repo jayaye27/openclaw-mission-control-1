@@ -12,7 +12,7 @@ import { verifySessionApi } from "@/lib/dal";
 import { join, extname, basename } from "path";
 import { execFile } from "child_process";
 import { promisify } from "util";
-import { getDefaultWorkspaceSync } from "@/lib/paths";
+import { getDefaultWorkspaceSync, validateSafePath } from "@/lib/paths";
 import { runCli, runCliJson } from "@/lib/openclaw-cli";
 
 const WORKSPACE = getDefaultWorkspaceSync();
@@ -249,15 +249,17 @@ export async function PUT(request: NextRequest) {
     }
 
     if (file) {
-      const safePath = String(file).replace(/\.\./g, "").replace(/^\/+/, "");
-      if (!safePath.endsWith(".md")) {
-        return NextResponse.json({ error: "invalid file" }, { status: 400 });
+      if (!String(file).endsWith(".md")) {
+        return NextResponse.json({ error: "invalid file type" }, { status: 400 });
       }
-      const fullPath = join(WORKSPACE, "memory", safePath);
+      const fullPath = validateSafePath(String(file), join(WORKSPACE, "memory"));
+      if (!fullPath) {
+        return NextResponse.json({ error: "invalid path" }, { status: 400 });
+      }
       await writeFile(fullPath, content, "utf-8");
       const words = content.split(/\s+/).filter(Boolean).length;
       const size = Buffer.byteLength(content, "utf-8");
-      return NextResponse.json({ ok: true, file: safePath, words, size });
+      return NextResponse.json({ ok: true, file: basename(fullPath), words, size });
     }
 
     const memoryFile = await readWorkspaceMemoryFile(WORKSPACE, false);
@@ -291,17 +293,19 @@ export async function DELETE(request: NextRequest) {
     if (!file) {
       return NextResponse.json({ error: "file required" }, { status: 400 });
     }
-    const safePath = String(file).replace(/\.\./g, "").replace(/^\/+/, "");
-    if (!safePath.endsWith(".md")) {
-      return NextResponse.json({ error: "invalid file" }, { status: 400 });
+    if (!file.endsWith(".md")) {
+      return NextResponse.json({ error: "invalid file type" }, { status: 400 });
     }
-    const fullPath = join(WORKSPACE, "memory", safePath);
+    const fullPath = validateSafePath(file, join(WORKSPACE, "memory"));
+    if (!fullPath) {
+      return NextResponse.json({ error: "invalid path" }, { status: 400 });
+    }
     const s = await stat(fullPath);
     if (!s.isFile()) {
       return NextResponse.json({ error: "not a file" }, { status: 400 });
     }
     await unlink(fullPath);
-    return NextResponse.json({ ok: true, file: safePath, deleted: true });
+    return NextResponse.json({ ok: true, file: basename(fullPath), deleted: true });
   } catch (err) {
     console.error("Memory DELETE error:", err);
     return NextResponse.json({ error: String(err) }, { status: 500 });
@@ -326,8 +330,10 @@ export async function PATCH(request: NextRequest) {
     if (!fileName || !action) {
       return NextResponse.json({ error: "action and file required" }, { status: 400 });
     }
-    const safePath = String(fileName).replace(/\.\./g, "").replace(/^\/+/, "");
-    const fullPath = join(WORKSPACE, "memory", safePath);
+    const fullPath = validateSafePath(String(fileName), join(WORKSPACE, "memory"));
+    if (!fullPath) {
+      return NextResponse.json({ error: "invalid path" }, { status: 400 });
+    }
 
     if (action === "rename") {
       if (!newName) {
@@ -339,12 +345,12 @@ export async function PATCH(request: NextRequest) {
       }
       const newFullPath = join(WORKSPACE, "memory", sanitized);
       await rename(fullPath, newFullPath);
-      return NextResponse.json({ ok: true, file: sanitized, oldFile: safePath });
+      return NextResponse.json({ ok: true, file: sanitized, oldFile: basename(fullPath) });
     }
 
     if (action === "duplicate") {
-      const ext = extname(safePath);
-      const base = basename(safePath, ext);
+      const ext = extname(fullPath);
+      const base = basename(fullPath, ext);
       let suffix = 1;
       let dupPath: string;
       do {
@@ -391,9 +397,12 @@ export async function POST(request: NextRequest) {
     const agentId = String(body.agentId || "").trim();
 
     if (file) {
-      const safePath = file.replace(/\.\./g, "").replace(/^\/+/, "");
-      if (!safePath.endsWith(".md")) {
-        return NextResponse.json({ error: "invalid file" }, { status: 400 });
+      if (!file.endsWith(".md")) {
+        return NextResponse.json({ error: "invalid file type" }, { status: 400 });
+      }
+      const validatedPath = validateSafePath(file, join(WORKSPACE, "memory"));
+      if (!validatedPath) {
+        return NextResponse.json({ error: "invalid path" }, { status: 400 });
       }
     }
 
@@ -404,18 +413,29 @@ export async function POST(request: NextRequest) {
 
     let vectorState: VectorState | undefined;
     if (file) {
-      const safePath = file.replace(/\.\./g, "").replace(/^\/+/, "");
       try {
         const agents = agentId ? await getCliAgents() : [];
         const workspaceDir = agentId ? resolveAgentWorkspace(agentId, agents) : WORKSPACE;
-        const isTopLevelMemory = /^memory\.md$/i.test(safePath);
+        const isTopLevelMemory = /^memory\.md$/i.test(file);
 
         let fullPath: string;
         if (isTopLevelMemory) {
           const memoryFile = await readWorkspaceMemoryFile(workspaceDir, false);
           fullPath = memoryFile.path;
         } else {
-          fullPath = join(workspaceDir, "memory", safePath);
+          const validated = validateSafePath(file, join(workspaceDir, "memory"));
+          if (!validated) {
+            vectorState = undefined;
+            return NextResponse.json({
+              ok: true,
+              action,
+              file,
+              agentId: agentId || null,
+              vectorState: undefined,
+              force,
+            });
+          }
+          fullPath = validated;
         }
 
         const s = await stat(fullPath);
@@ -460,18 +480,19 @@ export async function GET(request: NextRequest) {
 
   try {
     if (file) {
-      const safePath = file.replace(/\.\./g, "").replace(/^\/+/, "");
-      if (!safePath.endsWith(".md")) {
-        return NextResponse.json({ error: "invalid file" }, { status: 400 });
+      if (!file.endsWith(".md")) {
+        return NextResponse.json({ error: "invalid file type" }, { status: 400 });
       }
-      const fullPath = workspaceRoot
-        ? join(WORKSPACE, safePath)
-        : join(WORKSPACE, "memory", safePath);
+      const baseDir = workspaceRoot ? WORKSPACE : join(WORKSPACE, "memory");
+      const fullPath = validateSafePath(file, baseDir);
+      if (!fullPath) {
+        return NextResponse.json({ error: "invalid path" }, { status: 400 });
+      }
       const content = await readFile(fullPath, "utf-8");
       const s = await stat(fullPath);
       const words = content.split(/\s+/).filter(Boolean).length;
       const size = Buffer.byteLength(content, "utf-8");
-      return NextResponse.json({ content, words, size, file: safePath, mtime: s.mtime.toISOString() });
+      return NextResponse.json({ content, words, size, file: basename(fullPath), mtime: s.mtime.toISOString() });
     }
 
     if (agentMemory) {
