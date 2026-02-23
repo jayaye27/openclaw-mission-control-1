@@ -10,6 +10,10 @@ const SENSITIVE_PATTERNS = [
   /password/i,
   /token/i,
   /credential/i,
+  /auth/i,
+  /bearer/i,
+  /private/i,
+  /access/i,
 ];
 
 function redactSensitive(obj: unknown, depth = 0): unknown {
@@ -19,8 +23,9 @@ function redactSensitive(obj: unknown, depth = 0): unknown {
   if (obj && typeof obj === "object") {
     const result: Record<string, unknown> = {};
     for (const [k, v] of Object.entries(obj as Record<string, unknown>)) {
-      if (SENSITIVE_PATTERNS.some((p) => p.test(k)) && typeof v === "string") {
-        result[k] = v.length > 8 ? v.slice(0, 4) + "..." + v.slice(-4) : "••••";
+      if (SENSITIVE_PATTERNS.some((p) => p.test(k)) && typeof v === "string" && v.length > 0) {
+        // Full redaction - no partial values exposed
+        result[k] = "[REDACTED]";
       } else {
         result[k] = redactSensitive(v, depth + 1);
       }
