@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { readFile } from "fs/promises";
 import { join, normalize } from "path";
 import { getDefaultWorkspace } from "@/lib/paths";
+import { verifySessionApi } from "@/lib/dal";
 
 const IMAGE_EXTENSIONS = new Set([
   ".png",
@@ -20,6 +21,12 @@ const IMAGE_EXTENSIONS = new Set([
  * Path must be relative to workspace root; no directory traversal (..) allowed.
  */
 export async function GET(request: NextRequest) {
+  // DAL-level auth check - CVE-2025-29927 mitigation
+  const session = await verifySessionApi()
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
   const { searchParams } = new URL(request.url);
   const rawPath = (searchParams.get("path") || "").trim();
   if (!rawPath) {

@@ -3,6 +3,7 @@ import { execFile } from "child_process";
 import { promisify } from "util";
 import { runCliJson } from "@/lib/openclaw-cli";
 import { getOpenClawBin } from "@/lib/paths";
+import { verifySessionApi } from "@/lib/dal";
 
 export const dynamic = "force-dynamic";
 
@@ -282,6 +283,12 @@ function buildStatusHighlights(status: GatewayStatusPayload): Highlight[] {
 }
 
 export async function GET() {
+  // DAL-level auth check - CVE-2025-29927 mitigation
+  const session = await verifySessionApi()
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
   let status: GatewayStatusPayload | null = null;
   let statusErr: string | null = null;
 

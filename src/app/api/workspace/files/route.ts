@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { readdir, realpath, stat } from "fs/promises";
 import { extname, join, relative } from "path";
+import { verifySessionApi } from "@/lib/dal";
 
 type WorkspaceFileRow = {
   relativePath: string;
@@ -74,6 +75,12 @@ async function walkFiles(
 }
 
 export async function GET(request: NextRequest) {
+  // DAL-level auth check - CVE-2025-29927 mitigation
+  const session = await verifySessionApi()
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
   const { searchParams } = new URL(request.url);
   const rawPath = (searchParams.get("path") || "").trim();
   if (!rawPath) {

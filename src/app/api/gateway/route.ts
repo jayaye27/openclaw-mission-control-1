@@ -3,8 +3,27 @@ import { runCliJson } from "@/lib/openclaw-cli";
 import { getOpenClawBin } from "@/lib/paths";
 import { execFile } from "child_process";
 import { promisify } from "util";
+import { verifySessionApi } from "@/lib/dal";
 
 const exec = promisify(execFile);
+
+/**
+ * Validate that a URL points to localhost only.
+ * Prevents SSRF attacks by blocking external gateway URLs.
+ */
+function isLocalhostUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    const hostname = parsed.hostname.toLowerCase();
+
+    // Allow only localhost variants
+    const allowedHosts = ["localhost", "127.0.0.1", "::1", "[::1]"];
+    return allowedHosts.includes(hostname);
+  } catch {
+    // Invalid URL
+    return false;
+  }
+}
 
 async function runGatewayServiceCommand(
   subcommand: "restart" | "stop" | "start",
@@ -23,6 +42,12 @@ async function runGatewayServiceCommand(
  * agent info, sessions, and heartbeat configuration.
  */
 export async function GET() {
+  // DAL-level auth check - CVE-2025-29927 mitigation
+  const session = await verifySessionApi()
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
   try {
     const health = await runCliJson<Record<string, unknown>>(
       ["health"],
@@ -53,15 +78,34 @@ export async function GET() {
 
 /**
  * POST /api/gateway - Restart/stop the gateway.
- * Body: { action: "restart" | "stop" }
+ * Body: { action: "restart" | "stop", gatewayUrl?: string }
  *
  * For restart: sends SIGTERM to the gateway process, then the macOS app
  * or daemon manager automatically restarts it.
  */
 export async function POST(req: Request) {
+  // DAL-level auth check - CVE-2025-29927 mitigation
+  const session = await verifySessionApi()
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
   try {
     const body = await req.json();
     const action = body.action as string;
+
+    // If a custom gateway URL is provided, validate it's localhost only
+    if (body.gatewayUrl) {
+      if (!isLocalhostUrl(body.gatewayUrl)) {
+        return NextResponse.json(
+          {
+            error: "Invalid gateway URL - only localhost URLs are allowed",
+            hint: "Gateway must be on 127.0.0.1 or localhost",
+          },
+          { status: 400 }
+        );
+      }
+    }
 
     if (action === "restart" || action === "stop") {
       // Prefer service-manager commands (launchd/systemd/schtasks).

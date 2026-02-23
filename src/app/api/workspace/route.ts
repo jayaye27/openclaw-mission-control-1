@@ -2,10 +2,17 @@ import { NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
 import { getDefaultWorkspaceSync } from "@/lib/paths";
+import { verifySessionApi } from "@/lib/dal";
 
 const WORKSPACE_DIR = getDefaultWorkspaceSync();
 
 export async function GET() {
+  // DAL-level auth check - CVE-2025-29927 mitigation
+  const session = await verifySessionApi()
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
   try {
     // Read memory files
     const memoryDir = path.join(WORKSPACE_DIR, 'memory');

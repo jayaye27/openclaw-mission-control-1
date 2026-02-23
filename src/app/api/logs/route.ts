@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { stat } from "fs/promises";
 import { join } from "path";
 import { getOpenClawHome } from "@/lib/paths";
+import { verifySessionApi } from "@/lib/dal";
 
 const OPENCLAW_HOME = getOpenClawHome();
 const LOGS_DIR = join(OPENCLAW_HOME, "logs");
@@ -129,6 +130,12 @@ function detectLevel(
 }
 
 export async function GET(request: NextRequest) {
+  // DAL-level auth check - CVE-2025-29927 mitigation
+  const session = await verifySessionApi()
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
   const { searchParams } = new URL(request.url);
   const type = searchParams.get("type") || "all";
   const limit = Math.min(

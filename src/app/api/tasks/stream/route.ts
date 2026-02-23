@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { subscribeKanban } from "@/lib/kanban-live";
+import { verifySessionApi } from "@/lib/dal";
 
 /**
  * SSE stream for live kanban updates.
@@ -8,6 +9,15 @@ import { subscribeKanban } from "@/lib/kanban-live";
  * No polling, no file watcher — works on any install (Mac, VPC).
  */
 export async function GET(request: NextRequest) {
+  // DAL-level auth check - CVE-2025-29927 mitigation
+  const session = await verifySessionApi()
+  if (!session) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      status: 401,
+      headers: { "Content-Type": "application/json" }
+    })
+  }
+
   const encoder = new TextEncoder();
 
   const stream = new ReadableStream({

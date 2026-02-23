@@ -3,6 +3,7 @@ import { readFile, readdir } from "fs/promises";
 import { join } from "path";
 import { getOpenClawHome, getSystemSkillsDir, getDefaultWorkspaceSync } from "@/lib/paths";
 import { fetchGatewaySessions, type NormalizedGatewaySession } from "@/lib/gateway-sessions";
+import { verifySessionApi } from "@/lib/dal";
 
 const OPENCLAW_HOME = getOpenClawHome();
 export const dynamic = "force-dynamic";
@@ -256,6 +257,12 @@ function toSessionInfo(sessions: NormalizedGatewaySession[]): SessionInfo[] {
 }
 
 export async function GET() {
+  // DAL-level auth check - CVE-2025-29927 mitigation
+  const session = await verifySessionApi()
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
   try {
     const configPath = join(OPENCLAW_HOME, "openclaw.json");
     const config = await readJsonSafe<Record<string, unknown>>(

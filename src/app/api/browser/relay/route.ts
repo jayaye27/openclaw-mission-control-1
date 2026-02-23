@@ -4,6 +4,7 @@ import { constants as fsConstants } from "fs";
 import { homedir } from "os";
 import { join } from "path";
 import { runCli, runCliJson } from "@/lib/openclaw-cli";
+import { verifySessionApi } from "@/lib/dal";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -214,6 +215,12 @@ async function buildSnapshot(profile: string | null): Promise<RelaySnapshot> {
 }
 
 export async function GET(request: NextRequest) {
+  // DAL-level auth check - CVE-2025-29927 mitigation
+  const session = await verifySessionApi()
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
   try {
     const { searchParams } = new URL(request.url);
     const profile = sanitizeProfile(searchParams.get("profile"));
@@ -233,6 +240,12 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  // DAL-level auth check - CVE-2025-29927 mitigation
+  const session = await verifySessionApi()
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
   let profile: string | null = null;
   try {
     const body = (await request.json().catch(() => ({}))) as {

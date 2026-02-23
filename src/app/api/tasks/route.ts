@@ -3,6 +3,7 @@ import { readFile, writeFile, mkdir } from "fs/promises";
 import { join, dirname } from "path";
 import { getDefaultWorkspace } from "@/lib/paths";
 import { notifyKanbanUpdated } from "@/lib/kanban-live";
+import { verifySessionApi } from "@/lib/dal";
 
 async function getKanbanPath(): Promise<string> {
   const ws = await getDefaultWorkspace();
@@ -19,6 +20,12 @@ const DEFAULT_COLUMNS = [
 /* ── GET — read existing board ────────────────────── */
 
 export async function GET() {
+  // DAL-level auth check - CVE-2025-29927 mitigation
+  const session = await verifySessionApi()
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
   try {
     const kanbanPath = await getKanbanPath();
     const raw = await readFile(kanbanPath, "utf-8");
@@ -37,6 +44,12 @@ export async function GET() {
 /* ── PUT — save board ─────────────────────────────── */
 
 export async function PUT(request: NextRequest) {
+  // DAL-level auth check - CVE-2025-29927 mitigation
+  const session = await verifySessionApi()
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
   try {
     const body = await request.json();
     if (!body.columns || !body.tasks) {
@@ -60,6 +73,12 @@ export async function PUT(request: NextRequest) {
 /* ── POST — initialize board + teach agent ────────── */
 
 export async function POST(request: NextRequest) {
+  // DAL-level auth check - CVE-2025-29927 mitigation
+  const session = await verifySessionApi()
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
   try {
     const body = await request.json();
     const action = body.action;

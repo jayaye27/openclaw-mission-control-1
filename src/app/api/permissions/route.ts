@@ -3,6 +3,7 @@ import { writeFileSync, unlinkSync } from "fs";
 import { join } from "path";
 import { tmpdir } from "os";
 import { runCli, runCliJson } from "@/lib/openclaw-cli";
+import { verifySessionApi } from "@/lib/dal";
 
 export const dynamic = "force-dynamic";
 
@@ -420,6 +421,12 @@ async function setApprovalsDefaults(updates: { security?: string; ask?: string; 
 }
 
 export async function GET() {
+  // DAL-level auth check - CVE-2025-29927 mitigation
+  const session = await verifySessionApi()
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
   try {
     const snapshot = await readSnapshot();
     return NextResponse.json(snapshot);
@@ -429,6 +436,12 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
+  // DAL-level auth check - CVE-2025-29927 mitigation
+  const session = await verifySessionApi()
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
   try {
     const body = await request.json();
     const action = String(body.action || "");

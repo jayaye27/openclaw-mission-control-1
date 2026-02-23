@@ -1,4 +1,5 @@
 import { runCli } from "@/lib/openclaw-cli";
+import { verifySessionApi } from "@/lib/dal";
 
 /**
  * Chat endpoint that sends a message to an OpenClaw agent and returns the response.
@@ -29,6 +30,12 @@ function dataUrlToSafeMessagePart(
 }
 
 export async function POST(req: Request) {
+  // DAL-level auth check - CVE-2025-29927 mitigation
+  const session = await verifySessionApi()
+  if (!session) {
+    return new Response("Unauthorized", { status: 401 })
+  }
+
   try {
     const body = await req.json();
     const messages: {
