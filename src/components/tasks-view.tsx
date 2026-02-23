@@ -18,10 +18,13 @@ import {
   CheckCircle,
   GripVertical,
   Copy,
+  Send,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { LoadingState } from "@/components/ui/loading-state";
 import { SectionLayout } from "@/components/section-layout";
+
+type Agent = { id: string; name: string };
 
 /* ── types ─────────────────────────────────────── */
 
@@ -74,12 +77,23 @@ export function TasksView() {
   const [detailTaskId, setDetailTaskId] = useState<number | null>(null);
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
   const streamRef = useRef<EventSource | null>(null);
+  const [agents, setAgents] = useState<Agent[]>([]);
 
   useEffect(() => {
-    fetch("/api/tasks")
-      .then((r) => r.json())
-      .then((d) => {
-        setData(d);
+    Promise.all([
+      fetch("/api/tasks").then((r) => r.json()),
+      fetch("/api/system").then((r) => r.json()).catch(() => ({ agents: [] })),
+    ])
+      .then(([kanbanData, systemData]) => {
+        setData(kanbanData);
+        if (systemData.agents) {
+          setAgents(
+            systemData.agents.map((a: { id: string; name: string }) => ({
+              id: a.id,
+              name: a.name || a.id,
+            }))
+          );
+        }
         setLoading(false);
       })
       .catch(() => setLoading(false));
@@ -229,6 +243,7 @@ export function TasksView() {
       <BoardOnboarding
         fileExists={fileExists}
         columns={columns}
+        agents={agents}
         onBoardCreated={(board) => setData(board)}
         addingToColumn={addingToColumn}
         setAddingToColumn={setAddingToColumn}
@@ -354,6 +369,7 @@ export function TasksView() {
               {addingToColumn === col.id && (
                 <AddTaskInline
                   column={col.id}
+                  agents={agents}
                   onAdd={(task) => {
                     addTask(task);
                     setAddingToColumn(null);
@@ -379,6 +395,7 @@ export function TasksView() {
                         key={task.id}
                         task={task}
                         columns={columns}
+                        agents={agents}
                         onSave={(updates) => {
                           updateTask(task.id, updates);
                           setEditingTask(null);
@@ -769,10 +786,12 @@ function TaskCard({
 
 function AddTaskInline({
   column,
+  agents,
   onAdd,
   onCancel,
 }: {
   column: string;
+  agents: Agent[];
   onAdd: (t: Omit<Task, "id">) => void;
   onCancel: () => void;
 }) {
@@ -780,21 +799,44 @@ function AddTaskInline({
   const [desc, setDesc] = useState("");
   const [priority, setPriority] = useState("medium");
   const [assignee, setAssignee] = useState("");
+  const [delegating, setDelegating] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
 
-  const submit = () => {
+  const submit = async () => {
     if (!title.trim()) return;
-    onAdd({
+    const task = {
       title: title.trim(),
       description: desc.trim() || undefined,
       column,
       priority,
-      assignee: assignee.trim() || undefined,
-    });
+      assignee: assignee || undefined,
+    };
+    onAdd(task);
+
+    // Auto-delegate if agent assigned
+    if (assignee) {
+      setDelegating(true);
+      try {
+        await fetch("/api/tasks/delegate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            taskId: Date.now(), // temporary ID
+            taskTitle: task.title,
+            taskDescription: task.description,
+            agentId: assignee,
+            priority: task.priority,
+          }),
+        });
+      } catch {
+        // Silent fail - task is still added
+      }
+      setDelegating(false);
+    }
   };
 
   return (
@@ -829,12 +871,18 @@ function AddTaskInline({
             </option>
           ))}
         </select>
-        <input
+        <select
           value={assignee}
           onChange={(e) => setAssignee(e.target.value)}
-          placeholder="Assignee"
-          className="flex-1 rounded border border-foreground/10 bg-muted px-2 py-1 text-xs text-muted-foreground outline-none placeholder:text-muted-foreground/60"
-        />
+          className="flex-1 rounded border border-foreground/10 bg-muted px-2 py-1 text-xs text-muted-foreground outline-none"
+        >
+          <option value="">Select agent...</option>
+          {agents.map((a) => (
+            <option key={a.id} value={a.id}>
+              {a.name}
+            </option>
+          ))}
+        </select>
         <div className="flex-1" />
         <button
           type="button"
@@ -846,10 +894,11 @@ function AddTaskInline({
         <button
           type="button"
           onClick={submit}
-          disabled={!title.trim()}
-          className="rounded bg-violet-600 px-2.5 py-1 text-xs font-medium text-white transition-colors hover:bg-violet-500 disabled:opacity-40"
+          disabled={!title.trim() || delegating}
+          className="flex items-center gap-1.5 rounded bg-violet-600 px-2.5 py-1 text-xs font-medium text-white transition-colors hover:bg-violet-500 disabled:opacity-40"
         >
-          Add
+          {assignee && <Send className="h-3 w-3" />}
+          {delegating ? "Sending..." : assignee ? "Add & Send" : "Add"}
         </button>
       </div>
     </div>
@@ -861,6 +910,7 @@ function AddTaskInline({
 function BoardOnboarding({
   fileExists,
   columns,
+  agents,
   onBoardCreated,
   addingToColumn,
   setAddingToColumn,
@@ -868,6 +918,7 @@ function BoardOnboarding({
 }: {
   fileExists: boolean;
   columns: Column[];
+  agents: Agent[];
   onBoardCreated: (board: KanbanData) => void;
   addingToColumn: string | null;
   setAddingToColumn: (col: string | null) => void;
@@ -1118,6 +1169,7 @@ function BoardOnboarding({
               </p>
               <AddTaskInline
                 column={addingToColumn}
+                agents={agents}
                 onAdd={(task) => {
                   addTask(task);
                   setAddingToColumn(null);
@@ -1213,12 +1265,14 @@ function StepIndicator({
 function EditTaskInline({
   task,
   columns,
+  agents,
   onSave,
   onCancel,
   onDelete,
 }: {
   task: Task;
   columns: Column[];
+  agents: Agent[];
   onSave: (updates: Partial<Task>) => void;
   onCancel: () => void;
   onDelete: () => void;
@@ -1236,7 +1290,7 @@ function EditTaskInline({
       description: desc.trim() || undefined,
       priority,
       column,
-      assignee: assignee.trim() || undefined,
+      assignee: assignee || undefined,
     });
   };
 
@@ -1282,12 +1336,18 @@ function EditTaskInline({
             </option>
           ))}
         </select>
-        <input
+        <select
           value={assignee}
           onChange={(e) => setAssignee(e.target.value)}
-          placeholder="Assignee"
-          className="flex-1 rounded border border-foreground/10 bg-muted px-2 py-1 text-xs text-muted-foreground outline-none placeholder:text-muted-foreground/60"
-        />
+          className="flex-1 rounded border border-foreground/10 bg-muted px-2 py-1 text-xs text-muted-foreground outline-none"
+        >
+          <option value="">Select agent...</option>
+          {agents.map((a) => (
+            <option key={a.id} value={a.id}>
+              {a.name}
+            </option>
+          ))}
+        </select>
       </div>
       <div className="mt-3 flex items-center gap-1.5">
         <button
