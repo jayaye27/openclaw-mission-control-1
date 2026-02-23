@@ -1,6 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { gatewayCall } from "@/lib/openclaw-cli";
 import { verifySessionApi } from "@/lib/dal";
+import { auditLog } from "@/lib/audit/logger";
+
+/**
+ * Extract client IP from request headers.
+ */
+function getClientIp(request: Request): string | null {
+  const xff = request.headers.get("x-forwarded-for");
+  if (xff) return xff.split(",")[0].trim();
+  return null;
+}
 
 export const dynamic = "force-dynamic";
 
@@ -225,10 +235,47 @@ export async function PATCH(request: NextRequest) {
       20000
     );
 
+    // Log successful config update
+    // Detect if credentials were updated (check for sensitive keys in patch)
+    let credentialsUpdated = false;
+    try {
+      const patchObj = JSON.parse(patchRaw);
+      const patchStr = JSON.stringify(patchObj).toLowerCase();
+      credentialsUpdated = SENSITIVE_PATTERNS.some(p => p.test(patchStr));
+    } catch {
+      // If parse fails, assume no credentials
+    }
+
+    auditLog({
+      category: "config",
+      action: "config.update",
+      actor: { userId: session.userId!, email: session.email! },
+      target: "openclaw.json",
+      outcome: "success",
+      details: {
+        section: patch ? "partial" : "full",
+        credentialsUpdated,
+        // DO NOT log actual credential values
+      },
+      ip: getClientIp(request),
+    });
+
     return NextResponse.json({ ok: true, result });
   } catch (err) {
     const msg = String(err);
     console.error("Config PATCH error:", msg);
+
+    // Log config update failure
+    auditLog({
+      category: "config",
+      action: "config.update",
+      actor: { userId: session.userId!, email: session.email! },
+      target: "openclaw.json",
+      outcome: "failure",
+      details: { error: msg.slice(0, 200) },
+      ip: getClientIp(request),
+    });
+
     return NextResponse.json({ error: msg }, { status: 400 });
   }
 }
@@ -269,9 +316,44 @@ export async function PUT(request: NextRequest) {
       20000
     );
 
+    // Log successful full config update
+    let credentialsUpdated = false;
+    try {
+      const configStr = JSON.stringify(config).toLowerCase();
+      credentialsUpdated = SENSITIVE_PATTERNS.some(p => p.test(configStr));
+    } catch {
+      // If stringify fails, assume no credentials
+    }
+
+    auditLog({
+      category: "config",
+      action: "config.update",
+      actor: { userId: session.userId!, email: session.email! },
+      target: "openclaw.json",
+      outcome: "success",
+      details: {
+        section: "full-replace",
+        credentialsUpdated,
+        // DO NOT log actual credential values
+      },
+      ip: getClientIp(request),
+    });
+
     return NextResponse.json({ ok: true, result });
   } catch (err) {
     const msg = String(err);
+
+    // Log config update failure
+    auditLog({
+      category: "config",
+      action: "config.update",
+      actor: { userId: session.userId!, email: session.email! },
+      target: "openclaw.json",
+      outcome: "failure",
+      details: { error: msg.slice(0, 200) },
+      ip: getClientIp(request),
+    });
+
     const validationMatch = msg.match(/invalid.*?:(.*)/i);
     return NextResponse.json(
       { error: validationMatch ? validationMatch[1].trim() : msg },
