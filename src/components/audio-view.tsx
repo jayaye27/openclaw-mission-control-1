@@ -662,13 +662,33 @@ function TalkModeSection({
     (config && Object.keys(config).length > 0) || talkSectionExists === true;
 
   const startListening = useCallback(() => {
-    const SpeechRecognition =
-      typeof window !== "undefined" &&
-      (window as unknown as { SpeechRecognition?: new () => SpeechRecognition; webkitSpeechRecognition?: new () => SpeechRecognition }).SpeechRecognition;
-    const WebkitSpeechRecognition =
-      typeof window !== "undefined" &&
-      (window as unknown as { webkitSpeechRecognition?: new () => SpeechRecognition }).webkitSpeechRecognition;
-    const Recognition = SpeechRecognition || WebkitSpeechRecognition;
+    // Define interfaces for the Web Speech API (not included in standard TypeScript dom lib)
+    interface ISpeechRecognitionResult {
+      readonly transcript: string;
+      readonly confidence: number;
+    }
+    interface ISpeechRecognitionResultList {
+      readonly length: number;
+      [index: number]: { [index: number]: ISpeechRecognitionResult };
+    }
+    interface ISpeechRecognitionEvent {
+      readonly results: ISpeechRecognitionResultList;
+    }
+    interface ISpeechRecognition {
+      continuous: boolean;
+      interimResults: boolean;
+      lang: string;
+      onresult: ((event: ISpeechRecognitionEvent) => void) | null;
+      onerror: (() => void) | null;
+      onend: (() => void) | null;
+      start: () => void;
+    }
+    type SpeechRecognitionCtor = new () => ISpeechRecognition;
+
+    const windowWithSpeech = typeof window !== "undefined" ?
+      (window as unknown as { SpeechRecognition?: SpeechRecognitionCtor; webkitSpeechRecognition?: SpeechRecognitionCtor }) : null;
+
+    const Recognition = windowWithSpeech?.SpeechRecognition || windowWithSpeech?.webkitSpeechRecognition;
     if (!Recognition) {
       return;
     }
@@ -677,7 +697,7 @@ function TalkModeSection({
     rec.interimResults = false;
     rec.lang = "en-US";
     setListening(true);
-    rec.onresult = (event: SpeechRecognitionEvent) => {
+    rec.onresult = (event: ISpeechRecognitionEvent) => {
       const transcript = event.results?.[0]?.[0]?.transcript;
       if (transcript) setTestMessage((prev) => (prev ? `${prev} ${transcript}` : transcript).trim());
       setListening(false);

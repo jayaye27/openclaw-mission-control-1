@@ -8,6 +8,9 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { ChatNotificationToast } from "@/components/chat-notification-toast";
 import { RestartAnnouncementBar } from "@/components/restart-announcement-bar";
 
+// Force dynamic rendering to avoid useSearchParams issues during static generation
+export const dynamic = "force-dynamic";
+
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
