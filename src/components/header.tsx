@@ -25,7 +25,9 @@ import {
   Activity,
   MessageSquare,
   Trash2,
+  LogOut,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { SearchModal } from "./search-modal";
 import { PairingNotifications } from "./pairing-notifications";
@@ -362,6 +364,28 @@ export function AgentChatPanel() {
   return createPortal(panel, portalRoot);
 }
 
+/* ── Logout Hook ─────────────────────────────────── */
+
+function useLogout() {
+  const [busy, setBusy] = useState(false);
+  const router = useRouter();
+
+  const logout = useCallback(async () => {
+    setBusy(true);
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+      router.push("/login");
+      router.refresh();
+    } catch {
+      // Even on error, try to redirect to login
+      router.push("/login");
+    }
+    setBusy(false);
+  }, [router]);
+
+  return { busy, logout };
+}
+
 /* ── Pause/Resume Gateway ───────────────────────── */
 
 function usePauseState() {
@@ -627,6 +651,7 @@ export function Header() {
   const chat = useChatState();
   const { paused, busy: pauseBusy, toggle: togglePause } = usePauseState();
   const { status: gwStatus, health: gwHealth } = useGatewayStatus();
+  const { busy: logoutBusy, logout } = useLogout();
 
   // Global Cmd+K / Ctrl+K shortcut
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
@@ -718,6 +743,25 @@ export function Header() {
 
           {/* Pairing Notifications */}
           <PairingNotifications />
+
+          {/* ── divider ── */}
+          <div className="hidden h-5 w-px bg-foreground/10 sm:block" />
+
+          {/* Logout */}
+          <button
+            type="button"
+            onClick={logout}
+            disabled={logoutBusy}
+            className="flex h-8 items-center gap-1.5 rounded-lg border border-foreground/10 bg-card px-2 md:px-3 text-xs text-muted-foreground transition-colors hover:border-red-500/20 hover:bg-red-500/10 hover:text-red-400 disabled:opacity-50"
+            title="Sign out"
+          >
+            {logoutBusy ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <LogOut className="h-3.5 w-3.5" />
+            )}
+            <span className="hidden sm:inline">Sign Out</span>
+          </button>
         </div>
       </header>
 
