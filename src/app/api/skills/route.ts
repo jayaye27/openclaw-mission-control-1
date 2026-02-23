@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { runCliJson, gatewayCall } from "@/lib/openclaw-cli";
 import { readFile } from "fs/promises";
 import { verifySessionApi } from "@/lib/dal";
+import { isAllowedPackage, getAllowedPackages } from "@/lib/security/allowed-packages";
 
 export const dynamic = "force-dynamic";
 
@@ -192,11 +193,26 @@ export async function POST(request: NextRequest) {
       case "install-brew": {
         // Install a binary dependency via brew
         const pkg = body.package as string;
-        if (!pkg)
+        if (!pkg) {
           return NextResponse.json(
             { error: "package required" },
             { status: 400 }
           );
+        }
+
+        // Security: Only allow whitelisted packages
+        if (!isAllowedPackage("brew", pkg)) {
+          const allowed = getAllowedPackages("brew");
+          return NextResponse.json(
+            {
+              error: `Package "${pkg}" is not in the allowed list`,
+              allowedPackages: allowed.slice(0, 20),
+              hint: "Contact administrator to add packages to the whitelist",
+            },
+            { status: 400 }
+          );
+        }
+
         // Run brew install
         const { execFile } = await import("child_process");
         const { promisify } = await import("util");
