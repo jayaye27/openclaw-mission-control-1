@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { verifySessionApi } from "@/lib/dal";
 import { runCliJson, runCli, gatewayCall } from "@/lib/openclaw-cli";
 
 export const dynamic = "force-dynamic";
@@ -301,6 +302,12 @@ function normalizeChannels(
  *   scope=all     - combined: configured channels + status + setup hints
  */
 export async function GET(request: NextRequest) {
+  // DAL-level auth check - CVE-2025-29927 mitigation
+  const session = await verifySessionApi();
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const { searchParams } = new URL(request.url);
   const scope = searchParams.get("scope") || "list";
 
@@ -503,6 +510,12 @@ export async function GET(request: NextRequest) {
  *   { action: "disable", channel: "telegram" }
  */
 export async function POST(request: NextRequest) {
+  // DAL-level auth check - CVE-2025-29927 mitigation
+  const session = await verifySessionApi();
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     const body = await request.json();
     const action = body.action as string;

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { verifySessionApi } from "@/lib/dal";
 import {
   fetchCalendarEventsViaGog,
   GogCalendarError,
@@ -56,6 +57,12 @@ function toCalendarEvent(
 }
 
 export async function GET(request: NextRequest) {
+  // DAL-level auth check - CVE-2025-29927 mitigation
+  const session = await verifySessionApi();
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const { searchParams } = new URL(request.url);
   const days = Math.min(
     Math.max(parseInt(searchParams.get("days") || "14", 10), 1),

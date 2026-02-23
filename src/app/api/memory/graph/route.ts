@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { verifySessionApi } from "@/lib/dal";
 import { mkdir, readFile, readdir, stat, writeFile } from "fs/promises";
 import { execFile } from "child_process";
 import { promisify } from "util";

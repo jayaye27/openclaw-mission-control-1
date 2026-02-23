@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { verifySessionApi } from "@/lib/dal";
 import { access, readFile, readdir } from "fs/promises";
 import { constants as FS_CONSTANTS } from "fs";
 import { join } from "path";
@@ -845,6 +846,12 @@ function normalizeAgentRow(raw: AgentListEntry): {
 }
 
 export async function GET() {
+  // DAL-level auth check - CVE-2025-29927 mitigation
+  const session = await verifySessionApi();
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const warnings: string[] = [];
 
   const [agentsRaw, channelsListRaw, channelsStatusRaw, configGetRaw] =
@@ -1134,6 +1141,12 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
+  // DAL-level auth check - CVE-2025-29927 mitigation
+  const session = await verifySessionApi();
+  if (!session) {
+    return jsonNoStore({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     const body = (await request.json()) as {
       action?: string;

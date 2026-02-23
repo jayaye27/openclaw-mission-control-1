@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { verifySessionApi } from "@/lib/dal";
 import { readdir, readFile, stat, writeFile, unlink, rename, copyFile } from "fs/promises";
 import { join, extname, dirname, basename } from "path";
 import { getOpenClawHome } from "@/lib/paths";
@@ -114,6 +115,12 @@ function detectTag(relPath: string, name: string): string {
 }
 
 export async function GET(request: NextRequest) {
+  // DAL-level auth check - CVE-2025-29927 mitigation
+  const session = await verifySessionApi();
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const { searchParams } = new URL(request.url);
   const filePath = searchParams.get("path");
   try {
@@ -143,6 +150,12 @@ export async function GET(request: NextRequest) {
 }
 
 export async function PUT(request: NextRequest) {
+  // DAL-level auth check - CVE-2025-29927 mitigation
+  const session = await verifySessionApi();
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     const body = await request.json();
     const { path: filePath, content } = body;
@@ -166,6 +179,12 @@ export async function PUT(request: NextRequest) {
 
 /** DELETE - delete a file */
 export async function DELETE(request: NextRequest) {
+  // DAL-level auth check - CVE-2025-29927 mitigation
+  const session = await verifySessionApi();
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     const { searchParams } = new URL(request.url);
     const filePath = searchParams.get("path");
@@ -189,6 +208,12 @@ export async function DELETE(request: NextRequest) {
 
 /** PATCH - rename or duplicate a file */
 export async function PATCH(request: NextRequest) {
+  // DAL-level auth check - CVE-2025-29927 mitigation
+  const session = await verifySessionApi();
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     const body = await request.json();
     const { action, path: filePath, newName, newPath: _newPath } = body as {

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { verifySessionApi } from "@/lib/dal";
 import { gatewayCall } from "@/lib/openclaw-cli";
 
 export const dynamic = "force-dynamic";

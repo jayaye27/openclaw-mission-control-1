@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { verifySessionApi } from "@/lib/dal";
 import { readFile, readdir, stat } from "fs/promises";
 import { join } from "path";
 import { getOpenClawHome } from "@/lib/paths";

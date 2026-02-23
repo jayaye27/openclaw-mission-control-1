@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { verifySessionApi } from "@/lib/dal";
 import { getGogBin } from "@/lib/paths";
 import { fetchCalendarEventsViaGog, GogCalendarError } from "@/lib/gog-calendar";
 
@@ -9,6 +10,12 @@ export const dynamic = "force-dynamic";
  * Shows whether gog is available and if calendar auth works.
  */
 export async function GET() {
+  // DAL-level auth check - CVE-2025-29927 mitigation
+  const session = await verifySessionApi();
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   let gogPath: string;
   try {
     gogPath = await getGogBin();

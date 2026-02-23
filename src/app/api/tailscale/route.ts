@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { verifySessionApi } from "@/lib/dal";
 import { execFile } from "child_process";
 import { promisify } from "util";
 
