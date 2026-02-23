@@ -1,12 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { Sidebar } from "@/components/sidebar";
-import { Header, AgentChatPanel } from "@/components/header";
-import { KeyboardShortcuts } from "@/components/keyboard-shortcuts";
 import { ThemeProvider } from "@/components/theme-provider";
-import { ChatNotificationToast } from "@/components/chat-notification-toast";
-import { RestartAnnouncementBar } from "@/components/restart-announcement-bar";
+import { LayoutWrapper } from "@/components/layout-wrapper";
 
 // Force dynamic rendering to avoid useSearchParams issues during static generation
 export const dynamic = "force-dynamic";
@@ -75,19 +71,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} font-mono antialiased`}
       >
         <ThemeProvider>
-          <KeyboardShortcuts />
-          <div className="flex h-screen overflow-hidden">
-            <Sidebar />
-            <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-              <Header />
-              <RestartAnnouncementBar />
-              <main className="flex flex-1 overflow-hidden">
-                {children}
-              </main>
-            </div>
-          </div>
-          <AgentChatPanel />
-          <ChatNotificationToast />
+          <LayoutWrapper>{children}</LayoutWrapper>
         </ThemeProvider>
       </body>
     </html>
