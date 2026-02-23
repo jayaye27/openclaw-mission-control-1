@@ -6,6 +6,16 @@ import {
   isFirstRun,
 } from '@/lib/auth/token'
 import { getSession } from '@/lib/auth/session'
+import { auditLog } from '@/lib/audit/logger'
+
+/**
+ * Extract client IP from request headers.
+ */
+function getClientIp(request: Request): string | null {
+  const xff = request.headers.get('x-forwarded-for')
+  if (xff) return xff.split(',')[0].trim()
+  return null
+}
 
 /**
  * POST /api/auth/setup
@@ -17,6 +27,14 @@ export async function POST(request: NextRequest) {
     // Check if setup already completed
     const firstRun = await isFirstRun()
     if (!firstRun) {
+      auditLog({
+        category: 'auth',
+        action: 'setup.blocked',
+        actor: null,
+        outcome: 'denied',
+        details: { reason: 'already_configured' },
+        ip: getClientIp(request),
+      })
       return NextResponse.json(
         { error: 'Setup already completed' },
         { status: 400 }
@@ -83,6 +101,16 @@ export async function POST(request: NextRequest) {
     session.email = email.trim()
     session.loginAt = Date.now()
     await session.save()
+
+    // Log successful setup (DO NOT log token value)
+    auditLog({
+      category: 'auth',
+      action: 'setup.complete',
+      actor: { userId: 'admin', email: email.trim() },
+      outcome: 'success',
+      details: { adminName: `${firstName.trim()} ${lastName.trim()}` },
+      ip: getClientIp(request),
+    })
 
     // Return plaintext token (ONLY time it's ever returned)
     return NextResponse.json({

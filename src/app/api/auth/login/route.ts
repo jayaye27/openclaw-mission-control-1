@@ -2,6 +2,16 @@ import { NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth/session'
 import { verifyToken } from '@/lib/auth/token'
 import { checkLockout, recordFailedAttempt, clearLockout } from '@/lib/auth/lockout'
+import { auditLog } from '@/lib/audit/logger'
+
+/**
+ * Extract client IP from request headers.
+ */
+function getClientIp(request: Request): string | null {
+  const xff = request.headers.get('x-forwarded-for')
+  if (xff) return xff.split(',')[0].trim()
+  return null
+}
 
 /**
  * POST /api/auth/login
@@ -31,6 +41,14 @@ export async function POST(request: Request) {
     // Check lockout status
     const lockoutStatus = checkLockout(lockoutId)
     if (lockoutStatus.locked) {
+      auditLog({
+        category: 'auth',
+        action: 'login.lockout',
+        actor: null,
+        outcome: 'denied',
+        details: { reason: 'too_many_attempts' },
+        ip: getClientIp(request),
+      })
       return NextResponse.json(
         { error: 'Too many failed attempts. Please try again later.' },
         { status: 429 }
@@ -56,12 +74,28 @@ export async function POST(request: Request) {
       const result = recordFailedAttempt(lockoutId)
 
       if (result.locked) {
+        auditLog({
+          category: 'auth',
+          action: 'login.lockout',
+          actor: null,
+          outcome: 'denied',
+          details: { reason: 'too_many_attempts' },
+          ip: getClientIp(request),
+        })
         return NextResponse.json(
           { error: 'Too many failed attempts. Please try again later.' },
           { status: 429 }
         )
       }
 
+      auditLog({
+        category: 'auth',
+        action: 'login.failure',
+        actor: null,
+        outcome: 'failure',
+        details: { reason: 'invalid_credentials' },
+        ip: getClientIp(request),
+      })
       return NextResponse.json(
         { error: 'Invalid credentials' },
         { status: 401 }
@@ -80,6 +114,14 @@ export async function POST(request: Request) {
     session.email = process.env.ADMIN_EMAIL || 'admin@local'
     session.loginAt = Date.now()
     await session.save()
+
+    auditLog({
+      category: 'auth',
+      action: 'login.success',
+      actor: { userId: session.userId!, email: session.email! },
+      outcome: 'success',
+      ip: getClientIp(request),
+    })
 
     return NextResponse.json({
       success: true,
