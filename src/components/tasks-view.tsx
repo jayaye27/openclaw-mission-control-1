@@ -81,8 +81,8 @@ export function TasksView() {
 
   useEffect(() => {
     Promise.all([
-      fetch("/api/tasks").then((r) => r.json()),
-      fetch("/api/system").then((r) => r.json()).catch(() => ({ agents: [] })),
+      fetch("/api/tasks", { credentials: "include" }).then((r) => r.json()),
+      fetch("/api/system", { credentials: "include" }).then((r) => r.json()).catch(() => ({ agents: [] })),
     ])
       .then(([kanbanData, systemData]) => {
         setData(kanbanData);
