@@ -4,6 +4,7 @@ import { readFile, readdir } from "fs/promises";
 import { join } from "path";
 import { getOpenClawHome, getGatewayUrl, getGatewayPort } from "@/lib/paths";
 import { fetchGatewaySessions, summarizeSessionsByAgent } from "@/lib/gateway-sessions";
+import { runCliJson } from "@/lib/openclaw-cli";
 
 const OPENCLAW_HOME = getOpenClawHome();
 
@@ -125,41 +126,48 @@ async function readCronJobs(): Promise<{
   jobs: CronJobLive[];
   stats: { total: number; ok: number; error: number };
 }> {
-  const data = await readJsonSafe<{ jobs?: Record<string, unknown>[] }>(
-    join(OPENCLAW_HOME, "cron", "jobs.json"),
-    { jobs: [] }
-  );
-  const jobs: CronJobLive[] = (data.jobs || []).map((j: Record<string, unknown>) => {
-    const schedule = (j.schedule || {}) as Record<string, unknown>;
-    const state = (j.state || {}) as Record<string, unknown>;
-    let scheduleDisplay = "";
-    if (schedule.kind === "cron" && schedule.expr) {
-      scheduleDisplay = `${schedule.expr}${schedule.tz ? ` (${schedule.tz})` : ""}`;
-    } else if (schedule.kind === "every" && schedule.everyMs) {
-      const mins = Math.round((schedule.everyMs as number) / 60000);
-      scheduleDisplay = mins < 60 ? `Every ${mins}m` : `Every ${Math.round(mins / 60)}h`;
-    }
+  // Try to fetch cron jobs from gateway via CLI
+  try {
+    const data = await runCliJson<{ jobs?: Record<string, unknown>[] }>(
+      ["cron", "list", "--all"],
+      20000
+    );
+    const jobs: CronJobLive[] = (data.jobs || []).map((j: Record<string, unknown>) => {
+      const schedule = (j.schedule || {}) as Record<string, unknown>;
+      const state = (j.state || {}) as Record<string, unknown>;
+      let scheduleDisplay = "";
+      if (schedule.kind === "cron" && schedule.expr) {
+        scheduleDisplay = `${schedule.expr}${schedule.tz ? ` (${schedule.tz})` : ""}`;
+      } else if (schedule.kind === "every" && schedule.everyMs) {
+        const mins = Math.round((schedule.everyMs as number) / 60000);
+        scheduleDisplay = mins < 60 ? `Every ${mins}m` : `Every ${Math.round(mins / 60)}h`;
+      }
+      return {
+        id: j.id as string,
+        name: j.name as string,
+        enabled: j.enabled as boolean,
+        lastStatus: (state.lastStatus as string) || "unknown",
+        lastRunAtMs: (state.lastRunAtMs as number) || null,
+        nextRunAtMs: (state.nextRunAtMs as number) || null,
+        lastDurationMs: (state.lastDurationMs as number) || null,
+        consecutiveErrors: (state.consecutiveErrors as number) || 0,
+        lastError: (state.lastError as string) || null,
+        scheduleDisplay,
+      };
+    });
     return {
-      id: j.id as string,
-      name: j.name as string,
-      enabled: j.enabled as boolean,
-      lastStatus: (state.lastStatus as string) || "unknown",
-      lastRunAtMs: (state.lastRunAtMs as number) || null,
-      nextRunAtMs: (state.nextRunAtMs as number) || null,
-      lastDurationMs: (state.lastDurationMs as number) || null,
-      consecutiveErrors: (state.consecutiveErrors as number) || 0,
-      lastError: (state.lastError as string) || null,
-      scheduleDisplay,
+      jobs,
+      stats: {
+        total: jobs.length,
+        ok: jobs.filter((j) => j.lastStatus === "ok").length,
+        error: jobs.filter((j) => j.lastStatus === "error").length,
+      },
     };
-  });
-  return {
-    jobs,
-    stats: {
-      total: jobs.length,
-      ok: jobs.filter((j) => j.lastStatus === "ok").length,
-      error: jobs.filter((j) => j.lastStatus === "error").length,
-    },
-  };
+  } catch (err) {
+    console.warn("Failed to fetch cron jobs from gateway:", err);
+    // Fallback to empty
+    return { jobs: [], stats: { total: 0, ok: 0, error: 0 } };
+  }
 }
 
 async function readRecentCronRuns(): Promise<CronRunEntry[]> {

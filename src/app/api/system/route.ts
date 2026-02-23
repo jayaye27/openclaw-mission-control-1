@@ -4,9 +4,39 @@ import { join } from "path";
 import { getOpenClawHome, getSystemSkillsDir, getDefaultWorkspaceSync } from "@/lib/paths";
 import { fetchGatewaySessions, type NormalizedGatewaySession } from "@/lib/gateway-sessions";
 import { verifySessionApi } from "@/lib/dal";
+import { gatewayCall } from "@/lib/openclaw-cli";
 
 const OPENCLAW_HOME = getOpenClawHome();
 export const dynamic = "force-dynamic";
+
+/**
+ * Fetch configuration from gateway via RPC.
+ * Falls back to local file if gateway is unavailable.
+ */
+async function fetchGatewayConfig(): Promise<Record<string, unknown>> {
+  try {
+    // First try gateway RPC - this gets the actual running config
+    const result = await gatewayCall<{ parsed?: Record<string, unknown> }>(
+      "config.get",
+      undefined,
+      15000
+    );
+    if (result.parsed && typeof result.parsed === "object") {
+      return result.parsed;
+    }
+  } catch (err) {
+    console.warn("Gateway config.get failed, falling back to local file:", err);
+  }
+
+  // Fallback to local file
+  const configPath = join(OPENCLAW_HOME, "openclaw.json");
+  try {
+    const raw = await readFile(configPath, "utf-8");
+    return JSON.parse(raw) as Record<string, unknown>;
+  } catch {
+    return {};
+  }
+}
 
 type AgentInfo = {
   id: string;
@@ -138,10 +168,18 @@ async function getChannels(
   >;
 
   for (const [name, ch] of Object.entries(channelsConfig)) {
-    const accounts = ["default"];
+    // Skip "defaults" key which isn't a channel
+    if (name === "defaults" || typeof ch !== "object" || ch === null) continue;
+
+    const accounts: string[] = [];
     if (ch.accounts && typeof ch.accounts === "object") {
       accounts.push(...Object.keys(ch.accounts as Record<string, unknown>));
     }
+    // If no accounts sub-object, check if the channel has a token/enabled directly
+    if (accounts.length === 0 && (ch.enabled !== false || ch.botToken || ch.token)) {
+      accounts.push("default");
+    }
+
     channels.push({
       name,
       enabled: (ch.enabled as boolean) !== false,
@@ -264,11 +302,8 @@ export async function GET() {
   }
 
   try {
-    const configPath = join(OPENCLAW_HOME, "openclaw.json");
-    const config = await readJsonSafe<Record<string, unknown>>(
-      configPath,
-      {}
-    );
+    // Fetch config from gateway RPC (gets actual running config with channels, etc.)
+    const config = await fetchGatewayConfig();
 
     const gatewaySessions = await fetchGatewaySessions(10000).catch(() => []);
     const sessions = toSessionInfo(gatewaySessions);
