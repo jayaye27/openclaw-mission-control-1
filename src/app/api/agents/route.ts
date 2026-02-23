@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { readFile, writeFile, readdir } from "fs/promises";
+import { verifySessionApi } from "@/lib/dal";
 import { join } from "path";
 import { getOpenClawHome, getDefaultWorkspaceSync } from "@/lib/paths";
 import { runCliJson, runCli } from "@/lib/openclaw-cli";
@@ -123,6 +124,12 @@ async function readTextSafe(path: string): Promise<string | null> {
  * Rich agent discovery — merges CLI data, config, sessions, identity.
  */
 export async function GET() {
+  // DAL-level auth check - CVE-2025-29927 mitigation
+  const session = await verifySessionApi()
+  if (!session) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
   try {
     // 1. Get agents from CLI (includes binding info)
     let cliAgents: CliAgent[] = [];
@@ -425,6 +432,12 @@ export async function GET() {
  *   { action: "create", name: "work", model?: "provider/model", workspace?: "/path", bindings?: ["whatsapp:biz"] }
  */
 export async function POST(request: NextRequest) {
+  // DAL-level auth check - CVE-2025-29927 mitigation
+  const session = await verifySessionApi()
+  if (!session) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
   try {
     const body = await request.json();
     const action = body.action as string;

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { runCliJson, gatewayCall } from "@/lib/openclaw-cli";
 import { readFile } from "fs/promises";
+import { verifySessionApi } from "@/lib/dal";
 
 export const dynamic = "force-dynamic";
 
@@ -80,6 +81,12 @@ type SkillDetail = {
 /* ── GET ──────────────────────────────────────────── */
 
 export async function GET(request: NextRequest) {
+  // DAL-level auth check - CVE-2025-29927 mitigation
+  const session = await verifySessionApi()
+  if (!session) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
   const { searchParams } = new URL(request.url);
   const action = searchParams.get("action") || "list";
 
@@ -171,6 +178,12 @@ export async function GET(request: NextRequest) {
 /* ── POST: install / enable / disable / config ──── */
 
 export async function POST(request: NextRequest) {
+  // DAL-level auth check - CVE-2025-29927 mitigation
+  const session = await verifySessionApi()
+  if (!session) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
   try {
     const body = await request.json();
     const action = body.action as string;

@@ -8,6 +8,7 @@ import {
   rename,
   copyFile,
 } from "fs/promises";
+import { verifySessionApi } from "@/lib/dal";
 import { join, extname, basename } from "path";
 import { execFile } from "child_process";
 import { promisify } from "util";
@@ -208,6 +209,12 @@ function resolveAgentWorkspace(agentId: string, agents: CliAgentRow[]): string {
 }
 
 export async function PUT(request: NextRequest) {
+  // DAL-level auth check - CVE-2025-29927 mitigation
+  const session = await verifySessionApi()
+  if (!session) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
   try {
     const body = await request.json();
     const { file, content } = body;
@@ -272,6 +279,12 @@ export async function PUT(request: NextRequest) {
 
 /** DELETE a memory journal file */
 export async function DELETE(request: NextRequest) {
+  // DAL-level auth check - CVE-2025-29927 mitigation
+  const session = await verifySessionApi()
+  if (!session) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
   try {
     const { searchParams } = new URL(request.url);
     const file = searchParams.get("file");
@@ -297,6 +310,12 @@ export async function DELETE(request: NextRequest) {
 
 /** PATCH - rename or duplicate a memory journal file */
 export async function PATCH(request: NextRequest) {
+  // DAL-level auth check - CVE-2025-29927 mitigation
+  const session = await verifySessionApi()
+  if (!session) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
   try {
     const body = await request.json();
     const { action, file: fileName, newName } = body as {
@@ -354,6 +373,12 @@ export async function PATCH(request: NextRequest) {
 
 /** POST - trigger memory indexing */
 export async function POST(request: NextRequest) {
+  // DAL-level auth check - CVE-2025-29927 mitigation
+  const session = await verifySessionApi()
+  if (!session) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
   try {
     const body = await request.json();
     const action = String(body.action || "");
@@ -422,6 +447,12 @@ export async function POST(request: NextRequest) {
 }
 
 export async function GET(request: NextRequest) {
+  // DAL-level auth check - CVE-2025-29927 mitigation
+  const session = await verifySessionApi()
+  if (!session) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
   const { searchParams } = new URL(request.url);
   const file = searchParams.get("file");
   const agentMemory = searchParams.get("agentMemory");
