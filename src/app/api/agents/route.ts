@@ -5,6 +5,16 @@ import { join } from "path";
 import { getOpenClawHome, getDefaultWorkspaceSync } from "@/lib/paths";
 import { runCliJson, runCli } from "@/lib/openclaw-cli";
 import { fetchGatewaySessions, summarizeSessionsByAgent } from "@/lib/gateway-sessions";
+import { auditLog } from "@/lib/audit/logger";
+
+/**
+ * Extract client IP from request headers.
+ */
+function getClientIp(request: Request): string | null {
+  const xff = request.headers.get("x-forwarded-for");
+  if (xff) return xff.split(",")[0].trim();
+  return null;
+}
 
 const OPENCLAW_HOME = getOpenClawHome();
 export const dynamic = "force-dynamic";
@@ -438,9 +448,15 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
+  // Track operation details for error logging
+  let opAction = "unknown";
+  let opTarget: string | null = null;
+
   try {
     const body = await request.json();
     const action = body.action as string;
+    opAction = action;
+    opTarget = body.name || body.id || null;
 
     switch (action) {
       case "create": {
@@ -531,6 +547,21 @@ export async function POST(request: NextRequest) {
         } catch (patchErr) {
           console.warn("Agent create: config patch failed", patchErr);
         }
+
+        // Log successful agent creation
+        auditLog({
+          category: "agent",
+          action: "agent.create",
+          actor: { userId: session.userId!, email: session.email! },
+          target: name,
+          outcome: "success",
+          details: {
+            workspace,
+            model: body.model || "default",
+            bindings: bindings.length,
+          },
+          ip: getClientIp(request),
+        });
 
         return NextResponse.json({ ok: true, action, name, workspace, ...result });
       }
@@ -624,6 +655,21 @@ export async function POST(request: NextRequest) {
 
         await writeFile(configPath, JSON.stringify(config, null, 2), "utf-8");
 
+        // Log successful agent update
+        auditLog({
+          category: "agent",
+          action: "agent.update",
+          actor: { userId: session.userId!, email: session.email! },
+          target: id,
+          outcome: "success",
+          details: {
+            modelChanged: "model" in body,
+            subagentsChanged: "subagents" in body,
+            bindingsChanged: "bindings" in body,
+          },
+          ip: getClientIp(request),
+        });
+
         return NextResponse.json({ ok: true, action: "update", id });
       }
 
@@ -636,6 +682,18 @@ export async function POST(request: NextRequest) {
   } catch (err) {
     console.error("Agents API POST error:", err);
     const msg = String(err);
+
+    // Log agent operation failure
+    auditLog({
+      category: "agent",
+      action: `agent.${opAction}`,
+      actor: { userId: session.userId!, email: session.email! },
+      target: opTarget,
+      outcome: "failure",
+      details: { error: msg.slice(0, 200) },
+      ip: getClientIp(request),
+    });
+
     // Make gateway errors user-friendly
     if (msg.includes("already exists") || msg.includes("Agent already")) {
       return NextResponse.json(
