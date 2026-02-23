@@ -17,12 +17,12 @@ export type RunCliResult = {
  */
 export async function runCliCaptureBoth(
   args: string[],
-  timeout = 15000
+  timeout = 20000
 ): Promise<RunCliResult> {
   const bin = await getOpenClawBin();
   return new Promise((resolve, reject) => {
     const child = spawn(bin, args, {
-      env: { ...process.env, NO_COLOR: "1" },
+      env: { ...process.env, NO_COLOR: "1", HOME: process.env.HOME || "/root" },
       timeout,
       stdio: ["ignore", "pipe", "pipe"],
     });
@@ -47,7 +47,7 @@ export async function runCliCaptureBoth(
 
 export async function runCli(
   args: string[],
-  timeout = 15000,
+  timeout = 20000,
   stdin?: string
 ): Promise<string> {
   const bin = await getOpenClawBin();
@@ -55,7 +55,7 @@ export async function runCli(
     // Use spawn for stdin piping
     return new Promise((resolve, reject) => {
       const child = spawn(bin, args, {
-        env: { ...process.env, NO_COLOR: "1" },
+        env: { ...process.env, NO_COLOR: "1", HOME: process.env.HOME || "/root" },
         timeout,
         stdio: ["pipe", "pipe", "pipe"],
       });
@@ -74,14 +74,14 @@ export async function runCli(
   }
   const { stdout } = await exec(bin, args, {
     timeout,
-    env: { ...process.env, NO_COLOR: "1" },
+    env: { ...process.env, NO_COLOR: "1", HOME: process.env.HOME || "/root" },
   });
   return stdout;
 }
 
 export async function runCliJson<T>(
   args: string[],
-  timeout = 15000
+  timeout = 20000
 ): Promise<T> {
   const stdout = await runCli([...args, "--json"], timeout);
   return JSON.parse(stdout) as T;
@@ -90,7 +90,7 @@ export async function runCliJson<T>(
 export async function gatewayCall<T>(
   method: string,
   params?: Record<string, unknown>,
-  timeout = 15000
+  timeout = 20000
 ): Promise<T> {
   const args = ["gateway", "call", method, "--json"];
   if (params) args.push("--params", JSON.stringify(params));
