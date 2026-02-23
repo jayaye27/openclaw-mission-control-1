@@ -82,6 +82,7 @@ const navItems: {
   { section: "permissions", label: "Permissions", icon: Shield, dividerAfter: true },
   { section: "usage", label: "Usage", icon: BarChart3 },
   { section: "logs", label: "Logs", icon: Terminal },
+  { section: "audit", label: "Audit Log", icon: Shield, href: "/audit" },
   { section: "config", label: "Config", icon: Settings },
 ];
 
@@ -93,7 +94,8 @@ function SidebarNav({ onNavigate, collapsed }: { onNavigate?: () => void; collap
   const sectionFromQuery = searchParams.get("section") || "dashboard";
   const tabFromQuery = (searchParams.get("tab") || "").toLowerCase();
   const isSkillDetailRoute = pathname.startsWith("/skills/");
-  const section = isSkillDetailRoute ? "skills" : sectionFromQuery;
+  const isAuditRoute = pathname === "/audit";
+  const section = isSkillDetailRoute ? "skills" : isAuditRoute ? "audit" : sectionFromQuery;
   const tab = isSkillDetailRoute ? "skills" : tabFromQuery;
   const [skillsExpanded, setSkillsExpanded] = useState(true);
   const [agentsExpanded, setAgentsExpanded] = useState(true);
