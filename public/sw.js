@@ -1,5 +1,5 @@
-/// Service Worker for Mission Control PWA
-const CACHE_NAME = "mission-control-v1";
+/// Service Worker for Alfo Claw Command Center PWA
+const CACHE_NAME = "alfo-claw-v1";
 const STATIC_ASSETS = ["/", "/manifest.json"];
 
 self.addEventListener("install", (event) => {

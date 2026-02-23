@@ -1378,7 +1378,7 @@ export function MemoryView() {
 
                 {detailMeta.kind === "agent-memory" && selectedAgentMemory?.hasAltCaseFile && (
                   <div className="mb-3 rounded-lg border border-sky-500/30 bg-sky-500/10 px-3 py-2 text-xs text-sky-200">
-                    Both `MEMORY.md` and `memory.md` exist in this workspace. Mission Control edits the canonical file shown in the title.
+                    Both `MEMORY.md` and `memory.md` exist in this workspace. Alfo Claw Command Center edits the canonical file shown in the title.
                   </div>
                 )}
 

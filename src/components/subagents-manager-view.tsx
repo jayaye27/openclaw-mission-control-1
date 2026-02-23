@@ -455,7 +455,7 @@ export function SubagentsManagerView({
     <SectionBody width="content" padding="roomy" innerClassName="space-y-5">
       <div className="rounded-xl border border-border/70 bg-card p-4 text-sm text-muted-foreground">
         <div className="flex items-center gap-2 font-medium text-foreground">
-          <Network className="h-4 w-4" /> Subagents Mission Control
+          <Network className="h-4 w-4" /> Subagents Control
         </div>
         <p className="mt-2">
           Full control for subagent orchestration via gateway agent RPC: spawn, list, inspect, log,

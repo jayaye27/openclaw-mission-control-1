@@ -84,7 +84,7 @@ export async function POST(request: NextRequest) {
           id: 1,
           title: "Explore the Dashboard",
           description:
-            "Check out the Mission Control dashboard to see your agents, cron jobs, system health, and more.",
+            "Check out the Alfo Claw Command Center dashboard to see your agents, cron jobs, system health, and more.",
           column: "in-progress",
           priority: "medium",
         },
@@ -121,7 +121,7 @@ export async function POST(request: NextRequest) {
     const tasksMemory = `# Task Board (kanban.json)
 
 This workspace has a **Kanban task board** stored at \`kanban.json\` in this directory.
-The user manages it through Mission Control (the dashboard app) and expects you to interact with it too.
+The user manages it through Alfo Claw Command Center (the dashboard app) and expects you to interact with it too.
 
 ## Structure
 

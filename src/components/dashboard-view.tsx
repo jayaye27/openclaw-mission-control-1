@@ -1258,7 +1258,7 @@ export function DashboardView() {
                 </div>
                 <div>
                   <h3 className="text-xs font-semibold text-foreground/90">
-                    Welcome to Mission Control
+                    Welcome to Alfo Claw Command Center
                   </h3>
                   <p className="mt-1 text-xs text-muted-foreground/70">
                     Your OpenClaw agent is running. Here are some things to try:

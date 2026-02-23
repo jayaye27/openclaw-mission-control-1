@@ -546,7 +546,7 @@ function SkillPlayground({ skillName }: { skillName: string }) {
       </div>
 
       <p className="text-xs leading-relaxed text-muted-foreground">
-        Runs this skill through OpenClaw with the slash command path. Use this to validate behavior without leaving Mission Control.
+        Runs this skill through OpenClaw with the slash command path. Use this to validate behavior without leaving Alfo Claw Command Center.
       </p>
 
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2">

@@ -1,11 +1,11 @@
 {
-  "name": "Mission Control — OpenClaw AI Agent Dashboard",
-  "short_name": "MissionCtrl",
-  "description": "Open-source OpenClaw GUI to monitor, chat with, and manage your local AI agents, models, memory, and skills — all from your browser.",
+  "name": "Alfo Claw Command Center",
+  "short_name": "Alfo Claw",
+  "description": "Secure command center for managing OpenClaw agents",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#08080c",
-  "theme_color": "#7c3aed",
+  "theme_color": "#661a1a",
   "orientation": "any",
   "categories": ["productivity", "utilities", "developer-tools"],
   "icons": [

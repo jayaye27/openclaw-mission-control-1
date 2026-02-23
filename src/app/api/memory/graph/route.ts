@@ -629,7 +629,7 @@ function graphToMarkdown(graph: KnowledgeGraph): string {
     "",
     `Generated: ${graph.updatedAt}`,
     "",
-    "This file is generated from Mission Control knowledge graph editing.",
+    "This file is generated from Alfo Claw Command Center knowledge graph editing.",
     "",
     "## Entities",
     entityLines || "- _No entities yet_",

@@ -648,7 +648,7 @@ export function Header() {
         <div className="flex items-center gap-2.5 pl-10 md:pl-0">
           <span className="text-xs">🦞</span>
           <h1 className="text-sm font-semibold text-foreground">
-            Mission Control
+            Alfo Claw Command Center
           </h1>
           <GatewayStatusBadge status={gwStatus} health={gwHealth} />
         </div>
