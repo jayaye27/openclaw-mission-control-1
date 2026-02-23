@@ -19,7 +19,7 @@
 
 import { execFile } from "child_process";
 import { promisify } from "util";
-import { join } from "path";
+import { join, resolve, normalize } from "path";
 import { access } from "fs/promises";
 import { homedir } from "os";
 
@@ -316,4 +316,49 @@ export async function getSystemSkillsDir(): Promise<string> {
   _skills = "/usr/local/lib/node_modules/openclaw/skills";
   _skillsDone = true;
   return _skills;
+}
+
+// ── Path security utilities ─────────────────────
+
+/**
+ * Check if a resolved path is within a base directory.
+ * Prevents path traversal attacks by ensuring the final path
+ * doesn't escape the allowed directory.
+ *
+ * @param filePath - The user-provided path
+ * @param baseDir - The allowed base directory
+ * @returns true if path is safely within baseDir
+ */
+export function isPathWithinBase(filePath: string, baseDir: string): boolean {
+  const resolvedBase = resolve(baseDir);
+  const resolvedPath = resolve(baseDir, filePath);
+  return resolvedPath.startsWith(resolvedBase + "/") || resolvedPath === resolvedBase;
+}
+
+/**
+ * Validate and resolve a path, returning null if it escapes the base.
+ * Use this for file operations where you need both validation and the resolved path.
+ *
+ * @param userPath - The user-provided relative path
+ * @param baseDir - The allowed base directory
+ * @returns The resolved absolute path, or null if invalid
+ */
+export function validateSafePath(userPath: string, baseDir: string): string | null {
+  // Normalize to handle ../ and other path tricks
+  const normalized = normalize(userPath);
+
+  // Block obvious traversal attempts early
+  if (normalized.startsWith("..") || normalized.includes("/../")) {
+    return null;
+  }
+
+  const resolvedBase = resolve(baseDir);
+  const resolvedPath = resolve(baseDir, normalized);
+
+  // Ensure resolved path is within base
+  if (!resolvedPath.startsWith(resolvedBase + "/") && resolvedPath !== resolvedBase) {
+    return null;
+  }
+
+  return resolvedPath;
 }
