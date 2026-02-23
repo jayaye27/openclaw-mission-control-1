@@ -1,15 +1,15 @@
 {
   "name": "@openclaw/dashboard",
   "version": "0.1.0",
-  "description": "Mission Control — open-source OpenClaw GUI and AI agent dashboard for managing local AI agents, models, memory, and skills",
+  "description": "Alfo Claw Command Center — secure admin dashboard for managing OpenClaw AI agents",
   "keywords": [
     "openclaw",
-    "openclaw-gui",
+    "alfo-claw",
+    "command-center",
     "ai-agent-dashboard",
     "local-ai-management-tool",
     "ai-dashboard",
     "ai-agents",
-    "mission-control",
     "self-hosted-ai",
     "llm-management",
     "ai-model-manager",
