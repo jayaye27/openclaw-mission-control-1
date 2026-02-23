@@ -1,5 +1,7 @@
 import { NextRequest } from "next/server";
 import { spawn } from "child_process";
+import { verifySessionApi } from "@/lib/dal";
+import { isAllowedPackage, getAllowedPackages, type PackageManager } from "@/lib/security/allowed-packages";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300; // 5 minutes for long installs
@@ -10,9 +12,18 @@ export const maxDuration = 300; // 5 minutes for long installs
  * Streams live terminal output from an install command (brew, npm, etc).
  * Returns Server-Sent Events with { type, text } payloads.
  *
- * Body: { kind: "brew" | "npm", package: string }
+ * Body: { kind: "brew" | "npm" | "pip", package: string }
  */
 export async function POST(request: NextRequest) {
+  // DAL-level auth check - CVE-2025-29927 mitigation
+  const session = await verifySessionApi();
+  if (!session) {
+    return new Response(
+      JSON.stringify({ error: "Unauthorized" }),
+      { status: 401, headers: { "Content-Type": "application/json" } }
+    );
+  }
+
   const body = await request.json();
   const kind = body.kind as string;
   const pkg = body.package as string;
@@ -20,6 +31,27 @@ export async function POST(request: NextRequest) {
   if (!pkg) {
     return new Response(
       JSON.stringify({ error: "package required" }),
+      { status: 400, headers: { "Content-Type": "application/json" } }
+    );
+  }
+
+  // Validate package manager type
+  if (!["brew", "npm", "pip"].includes(kind)) {
+    return new Response(
+      JSON.stringify({ error: `Unsupported install kind: ${kind}` }),
+      { status: 400, headers: { "Content-Type": "application/json" } }
+    );
+  }
+
+  // Security: Only allow whitelisted packages
+  if (!isAllowedPackage(kind as PackageManager, pkg)) {
+    const allowed = getAllowedPackages(kind as PackageManager);
+    return new Response(
+      JSON.stringify({
+        error: `Package "${pkg}" is not in the allowed list for ${kind}`,
+        allowedPackages: allowed.slice(0, 20), // Show first 20 for reference
+        hint: "Contact administrator to add packages to the whitelist",
+      }),
       { status: 400, headers: { "Content-Type": "application/json" } }
     );
   }
@@ -52,7 +84,6 @@ export async function POST(request: NextRequest) {
 
   const stream = new ReadableStream({
     start(controller) {
-      // Send initial banner
       const banner = `\x1b[1;36m$ ${cmd} ${args.join(" ")}\x1b[0m\n`;
       controller.enqueue(
         encoder.encode(`data: ${JSON.stringify({ type: "stdout", text: banner })}\n\n`)
@@ -104,7 +135,6 @@ export async function POST(request: NextRequest) {
         } catch { /* stream closed */ }
       });
 
-      // Close stdin immediately
       child.stdin.end();
     },
   });
