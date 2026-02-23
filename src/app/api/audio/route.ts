@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { gatewayCall, runCli } from "@/lib/openclaw-cli";
 import { readFile, stat } from "fs/promises";
-import { extname, join } from "path";
+import { extname, join, resolve } from "path";
 import { getOpenClawHome } from "@/lib/paths";
 import { verifySessionApi } from "@/lib/dal";
 
@@ -146,10 +146,38 @@ export async function GET(request: NextRequest) {
       if (!filePath) {
         return NextResponse.json({ error: "path required" }, { status: 400 });
       }
-      // Security: only allow temp directory audio files
-      if (!filePath.startsWith("/tmp/") && !filePath.includes("/T/tts-") && !filePath.includes("/tmp/")) {
-        return NextResponse.json({ error: "Path not allowed" }, { status: 403 });
+
+      // Security: Allow only temp directory audio files
+      // Valid paths: /tmp/*, /var/folders/*/T/tts-*
+      const allowedBases = ["/tmp", "/var/folders"];
+      const resolvedPath = resolve(filePath);
+
+      const isAllowed = allowedBases.some(base => {
+        if (base === "/tmp") {
+          return resolvedPath.startsWith("/tmp/");
+        }
+        // macOS temp folders: /var/folders/XX/XXXXXX/T/
+        if (base === "/var/folders") {
+          return resolvedPath.startsWith("/var/folders/") && resolvedPath.includes("/T/");
+        }
+        return false;
+      });
+
+      if (!isAllowed) {
+        return NextResponse.json(
+          { error: "Path not allowed - only temp directories permitted" },
+          { status: 400 }
+        );
       }
+
+      // Additional check: block path traversal attempts
+      if (filePath.includes("..")) {
+        return NextResponse.json(
+          { error: "Invalid path - traversal not allowed" },
+          { status: 400 }
+        );
+      }
+
       try {
         const info = await stat(filePath);
         const ext = extname(filePath).toLowerCase();
