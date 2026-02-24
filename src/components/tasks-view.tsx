@@ -194,6 +194,32 @@ export function TasksView() {
     [data, persist]
   );
 
+  const sendToAgent = useCallback(
+    async (task: Task) => {
+      if (!task.assignee) return;
+      try {
+        const res = await fetch("/api/tasks/delegate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            taskId: task.id,
+            taskTitle: task.title,
+            taskDescription: task.description,
+            agentId: task.assignee,
+            priority: task.priority,
+          }),
+        });
+        if (res.ok) {
+          // Move task to in-progress after sending
+          updateTask(task.id, { column: "in-progress" });
+        }
+      } catch {
+        // Silent fail
+      }
+    },
+    [updateTask]
+  );
+
   /* ── rendering ─────────────────────────────────── */
 
   if (loading) {
@@ -412,6 +438,7 @@ export function TasksView() {
                         onDelete={() => deleteTask(task.id)}
                         onOpenDetail={() => setDetailTaskId(task.id)}
                         onAttachmentClick={(url) => setLightboxImage(url)}
+                        onSendToAgent={() => sendToAgent(task)}
                         isDragging={draggingTaskId === task.id}
                         onDragStart={() => setDraggingTaskId(task.id)}
                         onDragEnd={() => { setDraggingTaskId(null); setDragOverColumn(null); }}
@@ -589,6 +616,7 @@ function TaskCard({
   onDelete,
   onOpenDetail,
   onAttachmentClick,
+  onSendToAgent,
   isDragging,
   onDragStart,
   onDragEnd,
@@ -603,6 +631,7 @@ function TaskCard({
   onDelete: () => void;
   onOpenDetail?: () => void;
   onAttachmentClick?: (url: string) => void;
+  onSendToAgent?: () => void;
   isDragging: boolean;
   onDragStart: () => void;
   onDragEnd: () => void;
@@ -757,6 +786,16 @@ function TaskCard({
           <ChevronRight className="h-3.5 w-3.5" />
         </button>
         <div className="flex-1" />
+        {task.assignee && onSendToAgent && (
+          <button
+            type="button"
+            onClick={onSendToAgent}
+            className="rounded p-1 text-muted-foreground/60 transition-colors hover:bg-violet-500/20 hover:text-violet-400"
+            title={`Send to ${task.assignee}`}
+          >
+            <Send className="h-3.5 w-3.5" />
+          </button>
+        )}
         <button
           type="button"
           onClick={onEdit}

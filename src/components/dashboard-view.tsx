@@ -30,7 +30,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SectionBody, SectionLayout } from "@/components/section-layout";
-import { useSystem } from "@/hooks/use-api";
+import { useSystem, useLive } from "@/hooks/use-api";
 
 /* ── types ────────────────────────────────────────── */
 

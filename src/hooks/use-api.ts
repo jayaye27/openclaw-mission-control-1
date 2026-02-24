@@ -39,6 +39,18 @@ export function useGateway(config?: SWRConfiguration) {
 }
 
 /**
+ * Hook for /api/live - live dashboard data (gateway, cron, agents, logs)
+ * Refreshes every 8 seconds to match original polling interval
+ */
+export function useLive(config?: SWRConfiguration) {
+  return useSWR("/api/live", {
+    refreshInterval: 8000, // 8 seconds like the original POLL_INTERVAL
+    revalidateOnFocus: true,
+    ...config,
+  });
+}
+
+/**
  * Hook for /api/agents - agent list
  * Refreshes every 5 minutes
  */

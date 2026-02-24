@@ -3,6 +3,7 @@
 import { ReactNode } from 'react'
 import { usePathname } from 'next/navigation'
 import { AppShell } from '@/components/app-shell'
+import { TaskPickupProvider } from '@/components/task-pickup-provider'
 
 /**
  * Routes that should render without the AppShell (sidebar, header, etc.)
@@ -22,5 +23,9 @@ export function LayoutWrapper({ children }: { children: ReactNode }) {
     return <>{children}</>
   }
 
-  return <AppShell>{children}</AppShell>
+  return (
+    <TaskPickupProvider>
+      <AppShell>{children}</AppShell>
+    </TaskPickupProvider>
+  )
 }
