@@ -21,7 +21,8 @@ export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   // Public paths that don't require auth
-  const publicPaths = ['/login', '/api/auth/login', '/api/auth/setup', '/api/auth/logout']
+  // API routes handle their own auth via verifySessionApi() - let them through
+  const publicPaths = ['/login', '/api/', '/setup']
   const isPublicPath = publicPaths.some(path => pathname.startsWith(path))
 
   // Static assets and Next.js internals are always public
