@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useAgents } from "@/hooks/use-api";
 import {
   ReactFlow,
   ReactFlowProvider,
@@ -3219,14 +3220,36 @@ export function AgentsView() {
   const searchParams = useSearchParams();
   const tab: "agents" | "subagents" =
     (searchParams.get("tab") || "").toLowerCase() === "subagents" ? "subagents" : "agents";
-  const [data, setData] = useState<AgentsResponse | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+
+  // Use SWR for agents data with caching and auto-revalidation
+  const { data: swrData, error: swrError, isLoading: swrLoading, mutate: refreshAgents } = useAgents({
+    // Override default refresh for agents view - refresh more frequently when visible
+    refreshInterval: 30000, // 30 seconds
+    revalidateOnFocus: true,
+    revalidateOnReconnect: true,
+  }) as { data: AgentsResponse | undefined; error: Error | undefined; isLoading: boolean; mutate: () => void };
+
+  const data = swrData || null;
+  const error = swrError ? String(swrError) : null;
+  const loading = swrLoading && !data;
+
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [editingAgentId, setEditingAgentId] = useState<string | null>(null);
   const [selectedWorkspacePath, setSelectedWorkspacePath] = useState<string | null>(null);
   const [view, setView] = useState<"flow" | "grid">("flow");
   const [showAddModal, setShowAddModal] = useState(false);
+
+  // Update selected agent when data changes
+  useEffect(() => {
+    if (data?.agents) {
+      setSelectedId((prev) => {
+        if (prev && data.agents.some((a: Agent) => a.id === prev)) return prev;
+        if (data.agents.length === 0) return null;
+        const def = data.agents.find((a: Agent) => a.isDefault);
+        return def?.id || data.agents[0].id;
+      });
+    }
+  }, [data]);
 
   const handleAgentClick = useCallback((id: string) => {
     setSelectedId(id);
@@ -3244,51 +3267,10 @@ export function AgentsView() {
     router.push(`/?${params.toString()}`);
   }, [router]);
 
-  const fetchAgents = useCallback(async () => {
-    try {
-      const res = await fetch("/api/agents", { cache: "no-store" });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const json = await res.json();
-      setData(json);
-      setError(null);
-      setSelectedId((prev) => {
-        if (prev && json.agents.some((a: Agent) => a.id === prev)) return prev;
-        if (json.agents.length === 0) return null;
-        const def = json.agents.find((a: Agent) => a.isDefault);
-        return def?.id || json.agents[0].id;
-      });
-    } catch (err) {
-      setError(String(err));
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchAgents();
-  }, [fetchAgents]);
-
-  useEffect(() => {
-    const pollId = window.setInterval(() => {
-      void fetchAgents();
-    }, 5000);
-    return () => window.clearInterval(pollId);
-  }, [fetchAgents]);
-
-  useEffect(() => {
-    const handleFocus = () => {
-      void fetchAgents();
-    };
-    const handleVisibility = () => {
-      if (document.visibilityState === "visible") void fetchAgents();
-    };
-    window.addEventListener("focus", handleFocus);
-    document.addEventListener("visibilitychange", handleVisibility);
-    return () => {
-      window.removeEventListener("focus", handleFocus);
-      document.removeEventListener("visibilitychange", handleVisibility);
-    };
-  }, [fetchAgents]);
+  // Wrapper for compatibility with existing code that calls fetchAgents
+  const fetchAgents = useCallback(() => {
+    refreshAgents();
+  }, [refreshAgents]);
 
   const selectedAgent = useMemo(
     () => data?.agents.find((a) => a.id === selectedId) || null,

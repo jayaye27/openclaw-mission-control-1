@@ -30,6 +30,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SectionBody, SectionLayout } from "@/components/section-layout";
+import { useSystem } from "@/hooks/use-api";
 
 /* ── types ────────────────────────────────────────── */
 
@@ -846,7 +847,8 @@ const POLL_INTERVAL = 8000;
 export function DashboardView() {
   const router = useRouter();
   const [live, setLive] = useState<LiveData | null>(null);
-  const [system, setSystem] = useState<SystemData | null>(null);
+  // Use SWR for system data with 5-min cache
+  const { data: system } = useSystem() as { data: SystemData | null };
   const [lastRefresh, setLastRefresh] = useState(0);
   const [now, setNow] = useState(() => Date.now());
   const [dashboardTab, setDashboardTab] = useState<"overview" | "gateway">("overview");
@@ -897,11 +899,7 @@ export function DashboardView() {
 
   useEffect(() => {
     queueMicrotask(() => fetchLive());
-    // Also fetch system data once (channels, devices, skills)
-    fetch("/api/system", { cache: "no-store" })
-      .then((r) => r.json())
-      .then(setSystem)
-      .catch(() => { });
+    // System data is now fetched via SWR hook (useSystem)
 
     const startLivePolling = () => {
       if (pollRef.current) return;

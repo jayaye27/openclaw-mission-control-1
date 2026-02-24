@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { LayoutWrapper } from "@/components/layout-wrapper";
+import { SWRProvider } from "@/lib/swr-config";
 
 // Force dynamic rendering to avoid useSearchParams issues during static generation
 export const dynamic = "force-dynamic";
@@ -71,7 +72,9 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} font-mono antialiased`}
       >
         <ThemeProvider>
-          <LayoutWrapper>{children}</LayoutWrapper>
+          <SWRProvider>
+            <LayoutWrapper>{children}</LayoutWrapper>
+          </SWRProvider>
         </ThemeProvider>
       </body>
     </html>

@@ -23,6 +23,7 @@ import {
 import { cn } from "@/lib/utils";
 import { LoadingState } from "@/components/ui/loading-state";
 import { SectionLayout } from "@/components/section-layout";
+import { useTasks, useSystem } from "@/hooks/use-api";
 
 type Agent = { id: string; name: string };
 
@@ -65,8 +66,11 @@ const PRIORITIES = ["high", "medium", "low"];
 /* ── component ─────────────────────────────────── */
 
 export function TasksView() {
+  // SWR hooks for cached data fetching
+  const { data: tasksData, mutate: mutateTasks, isLoading: tasksLoading } = useTasks();
+  const { data: systemData } = useSystem();
+
   const [data, setData] = useState<KanbanData | null>(null);
-  const [loading, setLoading] = useState(true);
   const [saveStatus, setSaveStatus] = useState<"saved" | "saving" | null>(null);
   const [addingToColumn, setAddingToColumn] = useState<string | null>(null);
   const [editingTask, setEditingTask] = useState<number | null>(null);
@@ -77,29 +81,23 @@ export function TasksView() {
   const [detailTaskId, setDetailTaskId] = useState<number | null>(null);
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
   const streamRef = useRef<EventSource | null>(null);
-  const [agents, setAgents] = useState<Agent[]>([]);
 
+  // Sync SWR data to local state
   useEffect(() => {
-    Promise.all([
-      fetch("/api/tasks", { credentials: "include" }).then((r) => r.json()),
-      fetch("/api/system", { credentials: "include" }).then((r) => r.json()).catch(() => ({ agents: [] })),
-    ])
-      .then(([kanbanData, systemData]) => {
-        setData(kanbanData);
-        if (systemData.agents) {
-          setAgents(
-            systemData.agents.map((a: { id: string; name: string }) => ({
-              id: a.id,
-              name: a.name || a.id,
-            }))
-          );
-        }
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
-  }, []);
+    if (tasksData) {
+      setData(tasksData);
+    }
+  }, [tasksData]);
 
-  // Live updates: when kanban is written (dashboard or agent), refetch without polling
+  // Extract agents from system data
+  const agents: Agent[] = systemData?.agents?.map((a: { id: string; name: string }) => ({
+    id: a.id,
+    name: a.name || a.id,
+  })) || [];
+
+  const loading = tasksLoading && !data;
+
+  // Live updates: when kanban is written (dashboard or agent), refetch via SWR
   useEffect(() => {
     const es = new EventSource("/api/tasks/stream");
     streamRef.current = es;
@@ -107,10 +105,8 @@ export function TasksView() {
       try {
         const payload = JSON.parse(e.data);
         if (payload?.type === "kanban-updated") {
-          fetch("/api/tasks")
-            .then((r) => r.json())
-            .then((d) => setData(d))
-            .catch(() => {});
+          // Use SWR's mutate to trigger revalidation
+          mutateTasks();
         }
       } catch {
         /* ignore */
@@ -120,7 +116,7 @@ export function TasksView() {
       es.close();
       streamRef.current = null;
     };
-  }, []);
+  }, [mutateTasks]);
 
   /* ── persist helpers ───────────────────────────── */
 
